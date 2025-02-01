@@ -4,22 +4,29 @@ from pydantic import BaseModel
 import sys
 import os
 from dotenv import load_dotenv
+from api.docubot_agent.main import DocumentationAgent
+from langchain_openai import ChatOpenAI
 
 # .envファイルを読み込む
 load_dotenv()
 
 # docubot_agentモジュールをインポートできるようにパスを追加
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-from docubot_agent.main import DocumentationAgent
-from langchain_openai import ChatOpenAI
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 app = FastAPI(title="DocuBot API", version="1.0.0")
 
 # CORS設定（開発用）
+origins = [
+    "http://localhost:3000",
+    "http://localhost:3001",
+    "http://localhost:3002",
+    "http://localhost:3003",
+    "http://localhost:3004",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=os.getenv("CORS_ORIGINS", "*").split(","),
+    allow_origins=origins,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -43,7 +50,7 @@ async def health_check():
         "openai_api_key": bool(os.getenv("OPENAI_API_KEY"))
     }
 
-@app.post("/chat")
+@app.post("/api/chat")
 async def chat_endpoint(request: ChatRequest):
     """
     チャットエンドポイント

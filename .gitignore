@@ -41,3 +41,6 @@ venv
 # environment variables
 .env
 .env.local
+# Next.js
+/app/.next/
+/app/node_modules/
