@@ -2,8 +2,12 @@
   "version": 2,
   "builds": [
     {
-      "src": "api/Dockerfile",
-      "use": "@vercel/docker"
+      "src": "api/main.py",
+      "use": "@vercel/python",
+      "config": {
+        "runtime": "python3.10",
+        "installCommand": "curl -LsSf https://astral.sh/uv/install.sh | sh && . ~/.bashrc && uv pip sync"
+      }
     },
     {
       "src": "package.json",
