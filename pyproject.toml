@@ -15,12 +15,7 @@ dependencies = [
     "python-multipart==0.0.6",
     "pydantic-settings==2.1.0",
     "langgraph>=0.2.69",
-    "pytest>=8.0.0",
-    "tiktoken>=0.5.2",
-    "unstructured>=0.12.3",
-    "pdf2image>=1.17.0",
-    "pytesseract>=0.3.10",
-    "pypdf>=4.0.1"
+    "tiktoken>=0.5.2"
 ]
 
 [build-system]

@@ -6,7 +6,13 @@
       "use": "@vercel/python",
       "config": {
         "runtime": "python3.10",
-        "installCommand": "curl -LsSf https://astral.sh/uv/install.sh | sh && . ~/.bashrc && uv pip sync"
+        "installCommand": "curl -LsSf https://astral.sh/uv/install.sh | sh && . ~/.bashrc && uv pip sync",
+        "maxLambdaSize": "250mb",
+        "includeFiles": [
+          "api/**/*.py",
+          "pyproject.toml",
+          "uv.lock"
+        ]
       }
     },
     {
