@@ -3,7 +3,11 @@
   "builds": [
     {
       "src": "api/main.py",
-      "use": "@vercel/python"
+      "use": "@vercel/python",
+      "config": {
+        "runtime": "python3.10",
+        "installCommand": "curl -LsSf https://astral.sh/uv/install.sh | sh && uv pip sync"
+      }
     },
     {
       "src": "package.json",
