@@ -15,19 +15,22 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 app = FastAPI(title="DocuBot API", version="1.0.0")
 
-# CORS設定（開発用）
+# CORS設定
 origins = [
     "http://localhost:3000",
-    "http://localhost:3001",
-    "http://localhost:3002",
-    "http://localhost:3003",
-    "http://localhost:3004",
     "https://documentbot-agent.vercel.app",
+    "https://documentbot-agent-git-main-toshiyan76.vercel.app",
+    "https://documentbot-agent-toshiyan76.vercel.app"
 ]
+
+# 環境変数からCORSの追加設定を取得
+if additional_origins := os.getenv("CORS_ORIGINS"):
+    origins.extend(additional_origins.split(","))
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )

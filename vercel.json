@@ -19,5 +19,9 @@
       "src": "/(.*)",
       "dest": "/$1"
     }
-  ]
+  ],
+  "env": {
+    "PYTHONPATH": ".",
+    "CORS_ORIGINS": "https://documentbot-agent.vercel.app,https://documentbot-agent-git-main-toshiyan76.vercel.app,https://documentbot-agent-toshiyan76.vercel.app"
+  }
 } 
