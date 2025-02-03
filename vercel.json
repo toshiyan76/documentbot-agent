@@ -2,12 +2,8 @@
   "version": 2,
   "builds": [
     {
-      "src": "api/main.py",
-      "use": "@vercel/python",
-      "config": {
-        "runtime": "python3.10",
-        "installCommand": "pip install -r ../requirements.txt"
-      }
+      "src": "api/Dockerfile",
+      "use": "@vercel/docker"
     },
     {
       "src": "package.json",
