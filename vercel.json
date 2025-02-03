@@ -6,7 +6,7 @@
       "use": "@vercel/python",
       "config": {
         "runtime": "python3.10",
-        "installCommand": "cd .. && curl -LsSf https://astral.sh/uv/install.sh | sh && . ~/.bashrc && uv pip sync"
+        "installCommand": "curl -LsSf https://astral.sh/uv/install.sh | sh && . ~/.bashrc && uv pip sync"
       }
     },
     {
@@ -27,10 +27,5 @@
   "env": {
     "PYTHONPATH": ".",
     "CORS_ORIGINS": "https://documentbot-agent.vercel.app,https://documentbot-agent-git-main-toshiyan76.vercel.app,https://documentbot-agent-toshiyan76.vercel.app"
-  },
-  "functions": {
-    "api/**": {
-        "exclude": "{.next,*.cache,node_modules,dist,build,__pycache__,venv,public,app}/**"
-    }
   }
 }
