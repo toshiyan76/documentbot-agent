@@ -9,7 +9,8 @@ steps:
   
   # Build the frontend container image
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-t', 'gcr.io/$PROJECT_ID/frontend', '-f', 'frontend/Dockerfile', '.']
+    dir: 'frontend'
+    args: ['build', '-t', 'gcr.io/$PROJECT_ID/frontend', '.']
   
   # Push the backend container image
   - name: 'gcr.io/cloud-builders/docker'

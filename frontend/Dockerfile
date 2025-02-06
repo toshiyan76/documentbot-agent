@@ -20,10 +20,10 @@ FROM base AS builder
 WORKDIR /app
 ARG NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
-COPY ./src/package.json ./src/package-lock.json ./
+COPY src/package.json src/package-lock.json ./
 RUN npm ci
 ENV NODE_ENV=production
-COPY ./src .
+COPY src/ .
 RUN npm run build
 
 FROM gcr.io/distroless/nodejs22-debian12 AS runner
