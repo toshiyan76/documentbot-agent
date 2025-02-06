@@ -13,10 +13,10 @@ load_dotenv()
 # docubot_agentモジュールをインポートできるようにパスを追加
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-app = FastAPI(title="DocuBot API - Cloud Run", version="1.0.0")
+app = FastAPI(title="DocuBot API - Cloud Run (asia-east1)", version="1.0.0")
 
 # APIルートのプレフィックスを設定
-api_app = FastAPI(title="DocuBot API - Cloud Run", version="1.0.0")
+api_app = FastAPI(title="DocuBot API - Cloud Run (asia-east1)", version="1.0.0")
 app.mount("/api", api_app)
 
 # CORS設定
