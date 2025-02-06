@@ -1,7 +1,7 @@
 options:
   logging: CLOUD_LOGGING_ONLY
   pool:
-    name: 'projects/${PROJECT_ID}/locations/us-west1/workerPools/default'
+    name: 'projects/${PROJECT_ID}/locations/asia-northeast1/workerPools/default'
 
 steps:
   # Build the container image
