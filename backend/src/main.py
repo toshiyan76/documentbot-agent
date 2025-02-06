@@ -4,7 +4,7 @@ from pydantic import BaseModel
 import sys
 import os
 from dotenv import load_dotenv
-from api.docubot_agent.main import DocumentationAgent
+from docubot_agent.main import DocumentationAgent
 from langchain_openai import ChatOpenAI
 
 # .envファイルを読み込む
@@ -15,12 +15,13 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 app = FastAPI(title="DocuBot API", version="1.0.0")
 
+# APIルートのプレフィックスを設定
+api_app = FastAPI(title="DocuBot API", version="1.0.0")
+app.mount("/api", api_app)
+
 # CORS設定
 origins = [
-    "http://localhost:3000",
-    "https://documentbot-agent.vercel.app",
-    "https://documentbot-agent-git-main-toshiyan76.vercel.app",
-    "https://documentbot-agent-toshiyan76.vercel.app"
+    "http://localhost:3000"
 ]
 
 # 環境変数からCORSの追加設定を取得
@@ -39,10 +40,12 @@ class ChatRequest(BaseModel):
     message: str
 
 # エージェント初期化
-llm = ChatOpenAI()
+llm = ChatOpenAI(
+    model_name="gpt-4o"  # または "gpt-3.5-turbo" など
+)
 agent = DocumentationAgent(llm=llm)
 
-@app.get("/health")
+@api_app.get("/health")
 async def health_check():
     """
     ヘルスチェックエンドポイント
@@ -54,7 +57,7 @@ async def health_check():
         "openai_api_key": bool(os.getenv("OPENAI_API_KEY"))
     }
 
-@app.post("/api/chat")
+@api_app.post("/chat")
 async def chat_endpoint(request: ChatRequest):
     """
     チャットエンドポイント

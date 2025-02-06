@@ -1,0 +1,54 @@
+name: 'Docker Image Handler'
+description: 'Build and push Docker images to Google Artifact Registry'
+inputs:
+  context:
+    description: 'Docker build context'
+    required: true
+  image_suffix:
+    description: 'Suffix for the Docker image name'
+    required: true
+  build_args:
+    description: 'Build arguments for Docker build'
+    required: false
+    default: ''
+
+runs:
+  using: "composite"
+  steps:
+    - name: Build and push
+      shell: bash
+      run: |
+        IMAGE_NAME="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.ARTIFACT_REPO }}/${{ inputs.image_suffix }}"
+        
+        if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+          TAG="pr-${{ github.event.pull_request.number }}"
+        else
+          TAG="${{ github.sha }}"
+        fi
+        
+        FULL_IMAGE_NAME="${IMAGE_NAME}:${TAG}"
+        
+        echo "Building image: ${FULL_IMAGE_NAME}"
+        
+        if [[ -n "${{ inputs.build_args }}" ]]; then
+          BUILD_ARGS=""
+          while IFS= read -r line; do
+            if [[ -n "$line" ]]; then
+              BUILD_ARGS="$BUILD_ARGS --build-arg $line"
+            fi
+          done <<< "${{ inputs.build_args }}"
+          
+          docker build $BUILD_ARGS -t "${FULL_IMAGE_NAME}" "${{ inputs.context }}"
+        else
+          docker build -t "${FULL_IMAGE_NAME}" "${{ inputs.context }}"
+        fi
+        
+        if [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/main" ]]; then
+          echo "Pushing image: ${FULL_IMAGE_NAME}"
+          docker push "${FULL_IMAGE_NAME}"
+          
+          # Tag as latest
+          LATEST_IMAGE_NAME="${IMAGE_NAME}:latest"
+          docker tag "${FULL_IMAGE_NAME}" "${LATEST_IMAGE_NAME}"
+          docker push "${LATEST_IMAGE_NAME}"
+        fi

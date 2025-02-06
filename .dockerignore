@@ -1,0 +1,36 @@
+# Version control
+.git
+.gitignore
+.github/*
+
+# Environment variables
+.env
+.env_sample
+**/.env
+**/.env.*
+
+# Dependencies
+**/node_modules
+**/__pycache__
+**/*.pyc
+**/.pytest_cache
+
+# Documentation
+README.md
+*.md
+
+# Development tools
+Makefile
+terraform/*
+
+# IDE and editor files
+.idea
+.vscode
+*.swp
+*.swo
+
+# Build outputs
+**/dist
+**/.next
+**/build
+**/*.egg-info

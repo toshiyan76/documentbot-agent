@@ -1,0 +1,58 @@
+name: Terraform Destroy
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to destroy'
+        required: true
+        default: 'development'
+        type: choice
+        options:
+          - development
+          - staging
+          - production
+
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  REGION: ${{ secrets.GCP_REGION }}
+  OPERATION_ACCOUNT_EMAIL: ${{ secrets.OPERATION_ACCOUNT }}
+  WORKLOAD_IDENTITY_PROVIDER_NAME: ${{ secrets.WORKLOAD_IDENTITY_PROVIDER }}
+  ROOT_PATH_IAC_APPLICATION: ./terraform/application
+
+jobs:
+  terraform-destroy:
+    name: Terraform Destroy
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment }}
+    permissions:
+      contents: "read"
+      id-token: "write"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 'Authenticate to Google Cloud'
+        uses: 'google-github-actions/auth@v2'
+        with:
+          workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER_NAME }}
+          service_account: ${{ env.OPERATION_ACCOUNT_EMAIL }}
+
+      - name: 'Set up Cloud SDK'
+        uses: 'google-github-actions/setup-gcloud@v2'
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init
+        run: |
+          cd ${{ env.ROOT_PATH_IAC_APPLICATION }}
+          terraform init
+
+      - name: Terraform Plan Destroy
+        run: |
+          cd ${{ env.ROOT_PATH_IAC_APPLICATION }}
+          terraform plan -destroy
+
+      - name: Terraform Destroy
+        run: |
+          cd ${{ env.ROOT_PATH_IAC_APPLICATION }}
+          terraform destroy -auto-approve
