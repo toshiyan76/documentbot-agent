@@ -4,7 +4,8 @@ options:
 steps:
   # Build the backend container image
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-t', 'gcr.io/$PROJECT_ID/backend', '-f', 'Dockerfile', 'backend']
+    dir: 'backend'
+    args: ['build', '-t', 'gcr.io/$PROJECT_ID/backend', '.']
   
   # Build the frontend container image
   - name: 'gcr.io/cloud-builders/docker'
