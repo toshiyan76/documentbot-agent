@@ -22,7 +22,7 @@ WORKDIR /app
 
 COPY src/requirements.txt requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
-COPY src/ ./
+COPY src/ ./src/
 ENV FASTAPI_ENV="production"
 
 FROM python:${PYTHON_VERSION}-slim AS runner
@@ -30,8 +30,8 @@ WORKDIR /app
 ENV PYTHONPATH=/app/src
 ENV FASTAPI_ENV="production"
 
-COPY --from=builder /app .
-COPY --from=builder /usr/local/lib/python${PYTHON_VERSION}/site-packages/ /usr/local/lib/python${PYTHON_VERSION}/site-packages/
+COPY --from=builder /app/src .
+COPY --from=builder /usr/local/lib/python3.10/site-packages/ /usr/local/lib/python3.10/site-packages/
 
 EXPOSE 8080
 ENV PORT 8080
