@@ -10,8 +10,9 @@ WORKDIR /app
 
 FROM base AS dev
 WORKDIR /app
-COPY . /app
+COPY src/requirements.txt requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
+COPY . /app
 ENV PYTHONPATH=/app/src
 ENV FASTAPI_ENV="development"
 
@@ -19,8 +20,9 @@ FROM base AS builder
 ARG API_PORT
 WORKDIR /app
 
-COPY src/ ./
+COPY src/requirements.txt requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
+COPY src/ ./
 ENV FASTAPI_ENV="production"
 
 FROM python:${PYTHON_VERSION}-slim AS runner
