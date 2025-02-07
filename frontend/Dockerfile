@@ -1,4 +1,4 @@
-ARG IMG_VER="22.12.0-slim"
+ARG IMG_VER="22.12.0"
 
 ### base ####
 FROM node:${IMG_VER} AS base
@@ -40,10 +40,19 @@ ENV NODE_OPTIONS="--max-old-space-size=512 --max-http-header-size=16384"
 ENV SERVER_TIMEOUT=60000
 ENV KEEP_ALIVE_TIMEOUT=65000
 
+# Next.js固有の設定
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV NEXT_SHARP_PATH=/usr/local/lib/node_modules/sharp
+
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/server.js ./
 
 EXPOSE 3000
+
+# ヘルスチェック用の設定
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:3000/ || exit 1
 
 CMD ["node", "server.js"]
