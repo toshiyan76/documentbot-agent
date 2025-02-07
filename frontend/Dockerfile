@@ -11,13 +11,13 @@ RUN npm install -g npm@latest
 RUN corepack disable
 
 FROM base AS init
-WORKDIR /app
+WORKDIR /app/src
 
 FROM base AS dev
-WORKDIR /app
+WORKDIR /app/src
 
 FROM base AS builder
-WORKDIR /app
+WORKDIR /app/src
 ARG NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 COPY src/package.json src/package-lock.json ./
@@ -27,7 +27,7 @@ COPY src/ ./
 RUN npm run build
 
 FROM gcr.io/distroless/nodejs22-debian12 AS runner
-WORKDIR /app
+WORKDIR /app/src
 ENV NODE_ENV=production
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/static ./.next/static
