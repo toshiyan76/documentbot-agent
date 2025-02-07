@@ -2,6 +2,10 @@ options:
   logging: CLOUD_LOGGING_ONLY
 
 steps:
+  # Configure docker auth
+  - name: 'gcr.io/cloud-builders/gcloud'
+    args: ['auth', 'configure-docker', 'us-central1-docker.pkg.dev']
+
   # Build the backend container image
   - name: 'gcr.io/cloud-builders/docker'
     dir: 'backend'
