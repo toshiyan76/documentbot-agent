@@ -1,5 +1,8 @@
 options:
   logging: CLOUD_LOGGING_ONLY
+  # Enable build cache
+  machineType: 'N1_HIGHCPU_8'
+  dynamicSubstitutions: true
 
 steps:
   # Configure docker auth
@@ -9,12 +12,26 @@ steps:
   # Build the backend container image
   - name: 'gcr.io/cloud-builders/docker'
     dir: 'backend'
-    args: ['build', '-t', 'us-central1-docker.pkg.dev/$PROJECT_ID/docubot-repo/backend', '.']
+    args: 
+      - 'build'
+      - '-t'
+      - 'us-central1-docker.pkg.dev/$PROJECT_ID/docubot-repo/backend'
+      - '--cache-from'
+      - 'us-central1-docker.pkg.dev/$PROJECT_ID/docubot-repo/backend'
+      - '.'
   
   # Build the frontend container image
   - name: 'gcr.io/cloud-builders/docker'
     dir: 'frontend'
-    args: ['build', '-t', 'us-central1-docker.pkg.dev/$PROJECT_ID/docubot-repo/frontend', '--build-arg', 'NEXT_PUBLIC_API_URL=http://localhost:8080', '.']
+    args:
+      - 'build'
+      - '-t'
+      - 'us-central1-docker.pkg.dev/$PROJECT_ID/docubot-repo/frontend'
+      - '--cache-from'
+      - 'us-central1-docker.pkg.dev/$PROJECT_ID/docubot-repo/frontend'
+      - '--build-arg'
+      - 'NEXT_PUBLIC_API_URL=http://localhost:8080'
+      - '.'
   
   # Push the backend container image
   - name: 'gcr.io/cloud-builders/docker'
@@ -55,8 +72,6 @@ steps:
     - 'backend'
     - '--image'
     - 'us-central1-docker.pkg.dev/$PROJECT_ID/docubot-repo/backend'
-    - '--port'
-    - '8080'
     - '--set-env-vars'
     - 'PORT=8080,PYTHONPATH=/app/src'
     - '--cpu'
