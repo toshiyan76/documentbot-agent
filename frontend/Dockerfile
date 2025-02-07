@@ -28,7 +28,7 @@ COPY src/public ./public
 RUN mkdir -p public
 RUN npm run build
 
-FROM gcr.io/distroless/nodejs22-debian12 AS runner
+FROM node:${IMG_VER} AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 COPY --from=builder /app/public ./public
