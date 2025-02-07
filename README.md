@@ -8,6 +8,8 @@
 <div align="center">
 
 [![Cloud Run](https://img.shields.io/badge/Cloud%20Run-4285F4?style=for-the-badge&logo=google-cloud&logoColor=white)](https://cloud.google.com/run)
+[![Cloud Build](https://img.shields.io/badge/Cloud%20Build-4285F4?style=for-the-badge&logo=google-cloud&logoColor=white)](https://cloud.google.com/build)
+[![Artifact Registry](https://img.shields.io/badge/Artifact%20Registry-4285F4?style=for-the-badge&logo=google-cloud&logoColor=white)](https://cloud.google.com/artifact-registry)
 
 [![CI/CD Pipeline](https://github.com/toshiyan76/documentbot-agent/actions/workflows/main.yaml/badge.svg)](https://github.com/toshiyan76/documentbot-agent/actions/workflows/main.yaml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
