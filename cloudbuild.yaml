@@ -10,7 +10,7 @@ steps:
   # Build the frontend container image
   - name: 'gcr.io/cloud-builders/docker'
     dir: 'frontend'
-    args: ['build', '-t', 'us-central1-docker.pkg.dev/$PROJECT_ID/docubot-repo/frontend', '.']
+    args: ['build', '-t', 'us-central1-docker.pkg.dev/$PROJECT_ID/docubot-repo/frontend', '--build-arg', 'NEXT_PUBLIC_API_URL=http://localhost:8080', '.']
   
   # Push the backend container image
   - name: 'gcr.io/cloud-builders/docker'
@@ -61,8 +61,14 @@ steps:
     - '1'
     - '--memory'
     - '1Gi'
-    - '--update-annotations'
-    - 'run.googleapis.com/container-dependencies=backend:frontend'
+    - '--command'
+    - 'node'
+    - '--args'
+    - 'server.js'
+    - '--command'
+    - 'python'
+    - '--args'
+    - 'src/main.py'
 
 images:
   - 'us-central1-docker.pkg.dev/$PROJECT_ID/docubot-repo/backend'
