@@ -65,8 +65,6 @@ steps:
     - '--args'
     - 'server.js'
     - '--use-http2'
-    - '--max-instances'
-    - '1'
     - '--set-env-vars'
     - 'NEXT_PUBLIC_API_URL=http://localhost:8080,NODE_ENV=production,NODE_OPTIONS=--max-old-space-size=512 --max-http-header-size=16384,SERVER_TIMEOUT=60000,KEEP_ALIVE_TIMEOUT=65000'
     - '--container'
