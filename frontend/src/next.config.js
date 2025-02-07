@@ -9,6 +9,7 @@ const nextConfig = {
   },
   experimental: {
     serverMinification: true,
+    serverTimeout: 60000, // 60秒
   },
   async headers() {
     return [
