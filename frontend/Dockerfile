@@ -17,21 +17,24 @@ FROM base AS dev
 WORKDIR /app/src
 
 FROM base AS builder
-WORKDIR /app/src
+WORKDIR /app
 ARG NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
-COPY src/package.json src/package-lock.json ./
+COPY src/package*.json ./
 RUN npm ci
 ENV NODE_ENV=production
 COPY src/ ./
+COPY src/public ./public
+RUN mkdir -p public
 RUN npm run build
 
 FROM gcr.io/distroless/nodejs22-debian12 AS runner
-WORKDIR /app/src
+WORKDIR /app
 ENV NODE_ENV=production
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/package.json ./package.json
 
 EXPOSE 3000
 ENV PORT 3000
