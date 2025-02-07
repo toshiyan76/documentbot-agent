@@ -28,13 +28,8 @@ COPY src/public ./public
 RUN mkdir -p public
 RUN npm run build
 
-FROM node:${IMG_VER} AS runner
+FROM node:${IMG_VER}-slim AS runner
 WORKDIR /app
-
-RUN apt-get update -qq && \
-    apt-get install -y --no-install-recommends \
-    openssl \
-    && rm -rf /var/lib/apt/lists/*
 
 ENV NODE_ENV=production
 ENV PORT=3000
@@ -46,4 +41,4 @@ COPY --from=builder /app/.next/standalone ./
 
 EXPOSE 3000
 
-CMD ["node", "server.js"]
+CMD ["node", "--max-old-space-size=512", "server.js"]
