@@ -36,6 +36,10 @@ ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 ENV NODE_OPTIONS="--max-old-space-size=512 --max-http-header-size=16384"
 
+# タイムアウト設定
+ENV SERVER_TIMEOUT=60000
+ENV KEEP_ALIVE_TIMEOUT=65000
+
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/.next/standalone ./
