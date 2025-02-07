@@ -20,38 +20,35 @@ steps:
   - name: 'gcr.io/cloud-builders/docker'
     args: ['push', 'us-central1-docker.pkg.dev/$PROJECT_ID/docubot-repo/frontend']
   
-  # Deploy backend to Cloud Run
+  # Deploy to Cloud Run with sidecar pattern
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: gcloud
     args:
     - 'run'
     - 'deploy'
-    - 'backend'
-    - '--image'
-    - 'gcr.io/$PROJECT_ID/backend'
+    - 'docubot-service'
     - '--region'
     - 'asia-east1'
     - '--platform'
     - 'managed'
     - '--allow-unauthenticated'
-  
-  # Deploy frontend to Cloud Run
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    entrypoint: gcloud
-    args:
-    - 'run'
-    - 'deploy'
-    - 'frontend'
-    - '--image'
-    - 'gcr.io/$PROJECT_ID/frontend'
-    - '--region'
-    - 'asia-east1'
-    - '--platform'
-    - 'managed'
-    - '--allow-unauthenticated'
-    - '--set-env-vars'
-    - 'NEXT_PUBLIC_API_URL=https://backend-xxxxx-an.a.run.app'
+    - '--ingress'
+    - 'all'
+    - '--execution-environment'
+    - 'gen2'
+    - '--containers'
+    - |
+      frontend=us-central1-docker.pkg.dev/$PROJECT_ID/docubot-repo/frontend,
+      backend=us-central1-docker.pkg.dev/$PROJECT_ID/docubot-repo/backend
+    - '--container-command'
+    - 'frontend=server.js'
+    - '--container-port'
+    - 'frontend=3000,backend=8080'
+    - '--container-env'
+    - 'frontend=NEXT_PUBLIC_API_URL=http://localhost:8080'
+    - '--port'
+    - '3000'
 
 images:
-  - 'gcr.io/$PROJECT_ID/backend'
-  - 'gcr.io/$PROJECT_ID/frontend'
+  - 'us-central1-docker.pkg.dev/$PROJECT_ID/docubot-repo/backend'
+  - 'us-central1-docker.pkg.dev/$PROJECT_ID/docubot-repo/frontend'
