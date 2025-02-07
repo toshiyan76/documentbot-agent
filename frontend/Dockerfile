@@ -21,7 +21,7 @@ WORKDIR /app
 ARG NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 COPY src/package*.json ./
-RUN npm ci
+RUN npm install --production
 ENV NODE_ENV=production
 COPY src/ ./
 COPY src/public ./public
