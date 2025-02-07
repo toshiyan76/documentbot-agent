@@ -2,8 +2,26 @@
 const nextConfig = {
   output: "standalone",
   poweredByHeader: false,
+  compress: true,
+  generateEtags: true,
+  httpAgentOptions: {
+    keepAlive: true,
+  },
   experimental: {
     serverMinification: true,
+  },
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          {
+            key: "X-DNS-Prefetch-Control",
+            value: "on",
+          },
+        ],
+      },
+    ];
   },
   async rewrites() {
     return [
@@ -12,7 +30,7 @@ const nextConfig = {
         destination:
           process.env.NODE_ENV === "development"
             ? "http://127.0.0.1:8000/api/:path*"
-            : "/api/:path*",
+            : "https://asia-east1-documentbot-agent.cloud.run/api/:path*",
       },
     ];
   },

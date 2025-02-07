@@ -34,6 +34,7 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
+ENV NODE_OPTIONS="--max-old-space-size=512 --max-http-header-size=16384"
 
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/static ./.next/static
@@ -41,4 +42,4 @@ COPY --from=builder /app/.next/standalone ./
 
 EXPOSE 3000
 
-CMD ["node", "--max-old-space-size=512", "server.js"]
+CMD ["node", "server.js"]
