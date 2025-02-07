@@ -31,6 +31,7 @@ RUN npm run build
 FROM node:${IMG_VER} AS runner
 WORKDIR /app
 
+# 環境変数の設定
 ENV NODE_ENV=production
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
@@ -39,6 +40,12 @@ ENV NODE_OPTIONS="--max-old-space-size=512 --max-http-header-size=16384"
 # タイムアウト設定
 ENV SERVER_TIMEOUT=60000
 ENV KEEP_ALIVE_TIMEOUT=65000
+
+# Next.js固有の設定
+ENV NEXT_TELEMETRY_DISABLED=1
+
+# デバッグ用の環境変数
+ENV DEBUG="*"
 
 # Next.js固有の設定
 ENV NEXT_TELEMETRY_DISABLED=1

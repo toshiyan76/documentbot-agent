@@ -41,10 +41,29 @@ app.prepare().then(() => {
   server.keepAliveTimeout = keepAliveTimeout;
   server.headersTimeout = keepAliveTimeout + 5000;
 
+  console.log('Starting server...');
+console.log(`Environment: ${process.env.NODE_ENV}`);
+console.log(`Port: ${port}`);
+console.log(`Hostname: ${hostname}`);
+
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught Exception:', err);
+});
+
+process.on('unhandledRejection', (err) => {
+  console.error('Unhandled Rejection:', err);
+});
+
+try {
   server.listen(port, hostname, (err) => {
-    if (err) throw err;
-    console.log(
-      `> Ready on http://${hostname}:${port} - env ${process.env.NODE_ENV}`
-    );
+    if (err) {
+      console.error('Server startup error:', err);
+      throw err;
+    }
+    console.log(`> Ready on http://${hostname}:${port} - env ${process.env.NODE_ENV}`);
   });
+} catch (error) {
+  console.error('Failed to start server:', error);
+  process.exit(1);
+}
 });
