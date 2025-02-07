@@ -28,7 +28,7 @@ steps:
     - 'deploy'
     - 'docubot-service'
     - '--region'
-    - 'asia-east1'
+    - 'us-central1'
     - '--platform'
     - 'managed'
     - '--allow-unauthenticated'
@@ -37,15 +37,15 @@ steps:
     - '--execution-environment'
     - 'gen2'
     - '--containers'
-    - |
-      frontend=us-central1-docker.pkg.dev/$PROJECT_ID/docubot-repo/frontend,
-      backend=us-central1-docker.pkg.dev/$PROJECT_ID/docubot-repo/backend
+    - 'frontend=us-central1-docker.pkg.dev/$PROJECT_ID/docubot-repo/frontend,backend=us-central1-docker.pkg.dev/$PROJECT_ID/docubot-repo/backend'
     - '--container-command'
-    - 'frontend=server.js'
+    - 'frontend=node,backend=python'
+    - '--container-args'
+    - 'frontend=server.js,backend=src/main.py'
     - '--container-port'
     - 'frontend=3000,backend=8080'
     - '--container-env'
-    - 'frontend=NEXT_PUBLIC_API_URL=http://localhost:8080'
+    - 'frontend=NEXT_PUBLIC_API_URL=http://localhost:8080,backend=PORT=8080'
     - '--port'
     - '3000'
 
