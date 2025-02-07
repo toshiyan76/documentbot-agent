@@ -1,4 +1,4 @@
-ARG IMG_VER="22.12.0"
+ARG IMG_VER="20.11.0"
 
 ### base ####
 FROM node:${IMG_VER} AS base
@@ -7,7 +7,7 @@ RUN apt-get update -qq && \
     libvips42 \
     && rm -rf /var/lib/apt/lists/*
 
-RUN npm install -g npm@latest
+# npmは20.11.0に付属のものを使用するため、追加インストール不要
 RUN corepack disable
 
 FROM base AS init
@@ -24,8 +24,6 @@ COPY src/package*.json ./
 RUN npm install --production
 ENV NODE_ENV=production
 COPY src/ ./
-COPY src/public ./public
-RUN mkdir -p public
 RUN npm run build
 
 FROM node:${IMG_VER} AS runner
@@ -51,10 +49,10 @@ ENV DEBUG="*"
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NEXT_SHARP_PATH=/usr/local/lib/node_modules/sharp
 
+# スタンドアロンビルドの結果をコピー
+COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/static ./.next/static
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/server.js ./
 
 EXPOSE 3000
 
