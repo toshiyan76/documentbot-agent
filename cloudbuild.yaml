@@ -76,12 +76,6 @@ steps:
     - '2'
     - '--memory'
     - '2Gi'
-    - '--min-instances'
-    - '1'
-    - '--timeout'
-    - '300'
-    - '--startup-timeout'
-    - '300'
 
 images:
   - 'us-central1-docker.pkg.dev/$PROJECT_ID/docubot-repo/backend'
