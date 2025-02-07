@@ -28,7 +28,7 @@ COPY src/public ./public
 RUN mkdir -p public
 RUN npm run build
 
-FROM node:${IMG_VER}-slim AS runner
+FROM node:${IMG_VER} AS runner
 WORKDIR /app
 
 RUN apt-get update -qq && \
