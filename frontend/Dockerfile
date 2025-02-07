@@ -28,41 +28,17 @@ COPY src/public ./public
 RUN mkdir -p public
 RUN npm run build
 
-FROM node:${IMG_VER}-slim AS runner
+FROM node:${IMG_VER} AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
 ENV PORT=3000
-ENV HOSTNAME=0.0.0.0
-ENV NODE_OPTIONS="--max-old-space-size=512"
-
-# Install healthcheck dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    python3 \
-    python3-pip \
-    && pip3 install --no-cache-dir waitress==2.1.2 \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+ENV HOSTNAME="0.0.0.0"
 
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/.next/standalone ./
 
-# Create healthcheck endpoint
-RUN echo 'from http.server import HTTPServer, BaseHTTPRequestHandler\n\
-class HealthCheck(BaseHTTPRequestHandler):\n\
-    def do_GET(self):\n\
-        self.send_response(200)\n\
-        self.end_headers()\n\
-        self.wfile.write(b"OK")\n\
-server = HTTPServer(("", 8080), HealthCheck)\n\
-server.serve_forever()' > health_check.py \
-    && chmod +x health_check.py
+EXPOSE 3000
 
-EXPOSE 3000 8080
-
-# Create startup script
-RUN echo '#!/bin/sh\npython3 health_check.py & \nexec node server.js' > start.sh \
-    && chmod +x start.sh
-
-CMD ["/bin/sh", "-c", "./start.sh"]
+CMD ["node", "--max-old-space-size=512", "server.js"]
