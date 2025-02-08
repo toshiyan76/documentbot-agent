@@ -39,73 +39,44 @@ steps:
   - name: 'gcr.io/cloud-builders/docker'
     args: ['push', 'us-central1-docker.pkg.dev/$PROJECT_ID/docubot-repo/frontend']
 
-  # Create Cloud Run service configuration
+    # service.yamlを生成（テンプレートとして）
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    entrypoint: /bin/sh
+    entrypoint: bash
     args:
-    - '-c'
-    - |
-      cat > /workspace/service.yaml << 'EOF'
-      apiVersion: serving.knative.dev/v1
-      kind: Service
-      metadata:
-        name: docubot-service
-        labels:
-          cloud.googleapis.com/location: "us-central1"
-      spec:
-        template:
-          metadata:
-            annotations:
-              run.googleapis.com/execution-environment: gen2
-          spec:
-            containers:
-              - name: frontend
-                image: "us-central1-docker.pkg.dev/$PROJECT_ID/docubot-repo/frontend"
-                ports:
-                  - containerPort: 3000
-                resources:
-                  limits:
-                    cpu: "2"
-                    memory: "2Gi"
-                env:
-                  - name: PORT
-                    value: "3000"
-                  - name: NODE_ENV
-                    value: "production"
-                  - name: NEXT_PUBLIC_API_URL
-                    value: "http://localhost:8080"
-                  - name: NODE_OPTIONS
-                    value: "--max-old-space-size=512 --max-http-header-size=16384"
-                  - name: SERVER_TIMEOUT
-                    value: "60000"
-                  - name: KEEP_ALIVE_TIMEOUT
-                    value: "65000"
-              - name: backend
-                image: "us-central1-docker.pkg.dev/$PROJECT_ID/docubot-repo/backend"
-                ports:
-                  - containerPort: 8080
-                env:
-                  - name: PORT
-                    value: "8080"
-                  - name: PYTHONPATH
-                    value: "/app/src"
-      EOF
+      - -c
+      - |
+         cat > service.yaml <<'EOF'
+         apiVersion: serving.knative.dev/v1
+         kind: Service
+         metadata:
+           name: docubot-service
+         spec:
+           template:
+             spec:
+               containers:
+                 - name: frontend
+                   image: us-central1-docker.pkg.dev/$PROJECT_ID/docubot-repo/frontend
+                   ports:
+                     - containerPort: 3000
+                   env:
+                     - name: NEXT_PUBLIC_API_URL
+                       value: "http://localhost:8080"
+                 - name: backend
+                   image: us-central1-docker.pkg.dev/$PROJECT_ID/docubot-repo/backend
+                   env:
+                     - name: PORT
+                       value: "8080"
+         EOF
 
-  # Deploy to Cloud Run using the service configuration
+  # Cloud Runへのデプロイ
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     args:
-    - 'run'
-    - 'deploy'
-    - 'docubot-service'
-    - '--image'
-    - 'us-central1-docker.pkg.dev/$PROJECT_ID/docubot-repo/frontend'
-    - '--platform'
-    - 'managed'
-    - '--region'
-    - 'us-central1'
-    - '--allow-unauthenticated'
-    - '--service-account'
-    - 'your-service-account@your-project.iam.gserviceaccount.com'
+      - run
+      - services
+      - replace
+      - service.yaml
+      - --region
+      - us-central1
 
 images:
   - 'us-central1-docker.pkg.dev/$PROJECT_ID/docubot-repo/backend'
