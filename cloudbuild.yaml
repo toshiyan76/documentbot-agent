@@ -39,7 +39,7 @@ steps:
   - name: 'gcr.io/cloud-builders/docker'
     args: ['push', 'us-central1-docker.pkg.dev/$PROJECT_ID/docubot-repo/frontend']
 
-  # service.yamlを生成（シンプルなバージョン）
+  # service.yamlを生成（コンテナの基本設定のみ）
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: bash
     args:
@@ -58,9 +58,6 @@ steps:
                    image: us-central1-docker.pkg.dev/$PROJECT_ID/docubot-repo/frontend
                    ports:
                      - containerPort: 3000
-                   env:
-                     - name: NEXT_PUBLIC_API_URL
-                       value: "http://localhost:8080"
                  - name: backend
                    image: us-central1-docker.pkg.dev/$PROJECT_ID/docubot-repo/backend
                    env:
@@ -68,23 +65,20 @@ steps:
                        value: "8080"
          EOF
 
-  # Cloud Runへのデプロイ
+  # Cloud Runへのデプロイ（環境変数を設定）
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: 'gcloud'
     args:
       - 'run'
-      - 'deploy'
-      - 'docubot-service'
-      - '--image'
-      - 'us-central1-docker.pkg.dev/$PROJECT_ID/docubot-repo/backend'
+      - 'services'
+      - 'replace'
+      - 'service.yaml'
       - '--region'
       - 'us-central1'
-      - '--platform'
-      - 'managed'
       - '--set-secrets'
-      - 'OPENAI_API_KEY=openai_api_key:latest,LANGCHAIN_TRACING_V2=langchain_tracing_v2:latest,LANGCHAIN_ENDPOINT=langchain_endpoint:latest,LANGCHAIN_API_KEY=langchain_api_key:latest,LANGCHAIN_PROJECT=langchain_project:latest,CORS_ORIGINS=cors_origins:latest'
+      - 'backend.OPENAI_API_KEY=openai_api_key:latest,backend.LANGCHAIN_TRACING_V2=langchain_tracing_v2:latest,backend.LANGCHAIN_ENDPOINT=langchain_endpoint:latest,backend.LANGCHAIN_API_KEY=langchain_api_key:latest,backend.LANGCHAIN_PROJECT=langchain_project:latest,backend.CORS_ORIGINS=cors_origins:latest'
       - '--set-env-vars'
-      - 'NEXT_PUBLIC_API_URL=http://localhost:8080'
+      - 'backend.PORT=8080,frontend.NEXT_PUBLIC_API_URL=http://localhost:8080'
 
 images:
   - 'us-central1-docker.pkg.dev/$PROJECT_ID/docubot-repo/backend'
