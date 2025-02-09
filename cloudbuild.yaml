@@ -39,7 +39,7 @@ steps:
   - name: 'gcr.io/cloud-builders/docker'
     args: ['push', 'us-central1-docker.pkg.dev/$PROJECT_ID/docubot-repo/frontend']
 
-  # service.yamlを生成（コンテナの基本設定のみ）
+  # service.yamlを生成（シークレットと環境変数を含む）
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: bash
     args:
@@ -52,6 +52,15 @@ steps:
            name: docubot-service
          spec:
            template:
+             metadata:
+               annotations:
+                 run.googleapis.com/secrets: |
+                   openai-secret:projects/$PROJECT_NUMBER/secrets/openai_api_key,
+                   langchain-tracing:projects/$PROJECT_NUMBER/secrets/langchain_tracing_v2,
+                   langchain-endpoint:projects/$PROJECT_NUMBER/secrets/langchain_endpoint,
+                   langchain-api-key:projects/$PROJECT_NUMBER/secrets/langchain_api_key,
+                   langchain-project:projects/$PROJECT_NUMBER/secrets/langchain_project,
+                   cors-origins:projects/$PROJECT_NUMBER/secrets/cors_origins
              spec:
                containers:
                  - name: frontend
@@ -63,6 +72,36 @@ steps:
                    env:
                      - name: PORT
                        value: "8080"
+                     - name: OPENAI_API_KEY
+                       valueFrom:
+                         secretKeyRef:
+                           name: openai-secret
+                           key: latest
+                     - name: LANGCHAIN_TRACING_V2
+                       valueFrom:
+                         secretKeyRef:
+                           name: langchain-tracing
+                           key: latest
+                     - name: LANGCHAIN_ENDPOINT
+                       valueFrom:
+                         secretKeyRef:
+                           name: langchain-endpoint
+                           key: latest
+                     - name: LANGCHAIN_API_KEY
+                       valueFrom:
+                         secretKeyRef:
+                           name: langchain-api-key
+                           key: latest
+                     - name: LANGCHAIN_PROJECT
+                       valueFrom:
+                         secretKeyRef:
+                           name: langchain-project
+                           key: latest
+                     - name: CORS_ORIGINS
+                       valueFrom:
+                         secretKeyRef:
+                           name: cors-origins
+                           key: latest
          EOF
 
   # Cloud Runへのデプロイ（環境変数を設定）
@@ -75,10 +114,6 @@ steps:
       - 'service.yaml'
       - '--region'
       - 'us-central1'
-      - '--set-secrets'
-      - 'backend.OPENAI_API_KEY=openai_api_key:latest,backend.LANGCHAIN_TRACING_V2=langchain_tracing_v2:latest,backend.LANGCHAIN_ENDPOINT=langchain_endpoint:latest,backend.LANGCHAIN_API_KEY=langchain_api_key:latest,backend.LANGCHAIN_PROJECT=langchain_project:latest,backend.CORS_ORIGINS=cors_origins:latest'
-      - '--set-env-vars'
-      - 'backend.PORT=8080,frontend.NEXT_PUBLIC_API_URL=http://localhost:8080'
 
 images:
   - 'us-central1-docker.pkg.dev/$PROJECT_ID/docubot-repo/backend'
