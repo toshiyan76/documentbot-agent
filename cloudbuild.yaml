@@ -45,7 +45,7 @@ steps:
     args:
       - -c
       - |
-         cat > service.yaml <<'EOF'
+         cat > service.yaml <<EOF
          apiVersion: serving.knative.dev/v1
          kind: Service
          metadata:
@@ -55,14 +55,14 @@ steps:
              spec:
                containers:
                  - name: frontend
-                   image: us-central1-docker.pkg.dev/$PROJECT_ID/docubot-repo/frontend
+                   image: us-central1-docker.pkg.dev/\$PROJECT_ID/docubot-repo/frontend
                    ports:
                      - containerPort: 3000
                    env:
                      - name: NEXT_PUBLIC_API_URL
                        value: "http://localhost:8080"
                  - name: backend
-                   image: us-central1-docker.pkg.dev/$PROJECT_ID/docubot-repo/backend
+                   image: us-central1-docker.pkg.dev/\$PROJECT_ID/docubot-repo/backend
                    env:
                      - name: PORT
                        value: "8080"
