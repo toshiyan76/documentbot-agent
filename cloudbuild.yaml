@@ -39,7 +39,7 @@ steps:
   - name: 'gcr.io/cloud-builders/docker'
     args: ['push', 'us-central1-docker.pkg.dev/$PROJECT_ID/docubot-repo/frontend']
 
-    # service.yamlを生成（Secret Manager参照を含む）
+    # service.yamlを生成（Secret Manager参照を含む - 環境変数の安全な管理）
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: bash
     args:
