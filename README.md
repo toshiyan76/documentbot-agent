@@ -57,6 +57,8 @@ The deployment process involves several service accounts:
 2. Cloud Run Runtime Service Account
    - Used by the running application to access GCP resources
    - Requires the `Secret Manager Secret Accessor` role
+   - **Note**: After granting IAM roles, it may take a few minutes for the changes to propagate
+   - If deployment fails due to permissions, try waiting for 5-10 minutes and deploy again
 
 3. Cloud Run Service Agent
    - Manages Cloud Run infrastructure
