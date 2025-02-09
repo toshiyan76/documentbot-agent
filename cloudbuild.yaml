@@ -70,13 +70,14 @@ steps:
 
   # Cloud Runへのデプロイ
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'gcloud'
     args:
-      - run
-      - services
-      - replace
-      - service.yaml
-      - --region
-      - us-central1
+      - 'run'
+      - 'services'
+      - 'replace'
+      - 'service.yaml'
+      - '--region'
+      - 'us-central1'
 
 images:
   - 'us-central1-docker.pkg.dev/$PROJECT_ID/docubot-repo/backend'
