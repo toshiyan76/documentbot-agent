@@ -54,7 +54,7 @@ steps:
            template:
              metadata:
                annotations:
-                 run.googleapis.com/secrets: openai-api:projects/273148242685/secrets/openai_api_key,langchain-tracing:projects/273148242685/secrets/langchain_tracing_v2,langchain-endpoint:projects/273148242685/secrets/langchain_endpoint,langchain-api-key:projects/273148242685/secrets/langchain_api_key,langchain-project:projects/273148242685/secrets/langchain_project,cors-origins:projects/273148242685/secrets/cors_origins
+                 run.googleapis.com/secrets: openai-api:projects/$PROJECT_NUMBER/secrets/openai_api_key,langchain-tracing:projects/$PROJECT_NUMBER/secrets/langchain_tracing_v2,langchain-endpoint:projects/$PROJECT_NUMBER/secrets/langchain_endpoint,langchain-api-key:projects/$PROJECT_NUMBER/secrets/langchain_api_key,langchain-project:projects/$PROJECT_NUMBER/secrets/langchain_project,cors-origins:projects/$PROJECT_NUMBER/secrets/cors_origins
              spec:
                containers:
                  - name: frontend
