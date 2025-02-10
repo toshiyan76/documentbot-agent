@@ -63,6 +63,8 @@ steps:
                      - containerPort: 3000
                  - name: backend
                    image: us-central1-docker.pkg.dev/$PROJECT_ID/docubot-repo/backend
+                   ports:
+                     - containerPort: 8080
                    env:
                      - name: PORT
                        value: "8080"
