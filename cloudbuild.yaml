@@ -52,6 +52,9 @@ steps:
            name: docubot-service
          spec:
            template:
+             metadata:
+               annotations:
+                 run.googleapis.com/secrets: openai-secret:latest,langchain-tracing:latest,langchain-endpoint:latest,langchain-api-key:latest,langchain-project:latest,cors-origins:latest
              spec:
                containers:
                  - name: frontend
@@ -66,6 +69,36 @@ steps:
                    env:
                      - name: PORT
                        value: "8080"
+                     - name: OPENAI_API_KEY
+                       valueFrom:
+                         secretKeyRef:
+                           name: openai-secret
+                           key: latest
+                     - name: LANGCHAIN_TRACING_V2
+                       valueFrom:
+                         secretKeyRef:
+                           name: langchain-tracing
+                           key: latest
+                     - name: LANGCHAIN_ENDPOINT
+                       valueFrom:
+                         secretKeyRef:
+                           name: langchain-endpoint
+                           key: latest
+                     - name: LANGCHAIN_API_KEY
+                       valueFrom:
+                         secretKeyRef:
+                           name: langchain-api-key
+                           key: latest
+                     - name: LANGCHAIN_PROJECT
+                       valueFrom:
+                         secretKeyRef:
+                           name: langchain-project
+                           key: latest
+                     - name: CORS_ORIGINS
+                       valueFrom:
+                         secretKeyRef:
+                           name: cors-origins
+                           key: latest
          EOF
 
   # Cloud Runへのデプロイ
