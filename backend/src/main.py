@@ -1,3 +1,4 @@
+import logging
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -6,15 +7,40 @@ from dotenv import load_dotenv
 from docubot_agent.main import DocumentationAgent
 from langchain_openai import ChatOpenAI
 
+# ロギングの設定
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 # .envファイルを読み込む
 load_dotenv()
+
+# 環境変数の存在確認とログ出力
+required_env_vars = [
+    'OPENAI_API_KEY',
+    'LANGCHAIN_API_KEY',
+    'LANGCHAIN_PROJECT',
+    'LANGCHAIN_ENDPOINT',
+    'LANGCHAIN_TRACING_V2',
+    'CORS_ORIGINS'
+]
+
+for var in required_env_vars:
+    value = os.getenv(var)
+    logger.info(f'Environment variable {var} is {"set" if value else "not set"}')
 
 app = FastAPI()
 
 # CORS設定
+cors_origins = os.getenv('CORS_ORIGINS', '').split(',')
+if not cors_origins or cors_origins[0] == '':
+    logger.warning('CORS_ORIGINS not set or empty, defaulting to ["*"]')
+    cors_origins = ["*"]
+
+logger.info(f'Configuring CORS with origins: {cors_origins}')
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -35,10 +61,16 @@ async def health_check():
     ヘルスチェックエンドポイント
     サーバーの状態を確認するために使用
     """
+    env_status = {}
+    for var in required_env_vars:
+        env_status[var] = bool(os.getenv(var))
+    
+    logger.info(f'Health check called, environment status: {env_status}')
+    
     return {
         "status": "healthy",
         "version": "1.0.0",
-        "openai_api_key": bool(os.getenv("OPENAI_API_KEY"))
+        "environment": env_status
     }
 
 @app.post("/chat")
