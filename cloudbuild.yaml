@@ -54,7 +54,7 @@ steps:
            template:
              metadata:
                annotations:
-                 run.googleapis.com/secrets: openai:projects/$PROJECT_ID/secrets/openai_api_key,langchain_tracing:projects/$PROJECT_ID/secrets/langchain_tracing_v2,langchain_endpoint:projects/$PROJECT_ID/secrets/langchain_endpoint,langchain_api:projects/$PROJECT_ID/secrets/langchain_api_key,langchain_project:projects/$PROJECT_ID/secrets/langchain_project,cors:projects/$PROJECT_ID/secrets/cors_origins
+                 run.googleapis.com/secrets: openai:projects/$PROJECT_ID/secrets/openai_api_key,langchain-tracing:projects/$PROJECT_ID/secrets/langchain_tracing_v2,langchain-endpoint:projects/$PROJECT_ID/secrets/langchain_endpoint,langchain-api:projects/$PROJECT_ID/secrets/langchain_api_key,langchain-project:projects/$PROJECT_ID/secrets/langchain_project,cors:projects/$PROJECT_ID/secrets/cors_origins
              spec:
                containers:
                  - name: frontend
@@ -77,22 +77,22 @@ steps:
                      - name: LANGCHAIN_TRACING_V2
                        valueFrom:
                          secretKeyRef:
-                           name: langchain_tracing
+                           name: langchain-tracing
                            key: latest
                      - name: LANGCHAIN_ENDPOINT
                        valueFrom:
                          secretKeyRef:
-                           name: langchain_endpoint
+                           name: langchain-endpoint
                            key: latest
                      - name: LANGCHAIN_API_KEY
                        valueFrom:
                          secretKeyRef:
-                           name: langchain_api
+                           name: langchain-api
                            key: latest
                      - name: LANGCHAIN_PROJECT
                        valueFrom:
                          secretKeyRef:
-                           name: langchain_project
+                           name: langchain-project
                            key: latest
                      - name: CORS_ORIGINS
                        valueFrom:
