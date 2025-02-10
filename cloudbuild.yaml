@@ -54,7 +54,7 @@ steps:
            template:
              metadata:
                annotations:
-                 run.googleapis.com/secrets: openai-api-key:projects/$PROJECT_NUMBER/secrets/openai_api_key,langchain-tracing-v2:projects/$PROJECT_NUMBER/secrets/langchain_tracing_v2,langchain-endpoint:projects/$PROJECT_NUMBER/secrets/langchain_endpoint,langchain-api-key:projects/$PROJECT_NUMBER/secrets/langchain_api_key,langchain-project:projects/$PROJECT_NUMBER/secrets/langchain_project,cors-origins:projects/$PROJECT_NUMBER/secrets/cors_origins
+                 run.googleapis.com/secrets: openai-api-key:projects/$PROJECT_NUMBER/secrets/openai_api_key:2,langchain-tracing-v2:projects/$PROJECT_NUMBER/secrets/langchain_tracing_v2:2,langchain-endpoint:projects/$PROJECT_NUMBER/secrets/langchain_endpoint:2,langchain-api-key:projects/$PROJECT_NUMBER/secrets/langchain_api_key:2,langchain-project:projects/$PROJECT_NUMBER/secrets/langchain_project:2,cors-origins:projects/$PROJECT_NUMBER/secrets/cors_origins:2
              spec:
                containers:
                  - name: frontend
@@ -73,32 +73,32 @@ steps:
                        valueFrom:
                          secretKeyRef:
                            name: openai-api-key
-                           key: latest
+                           key: "2"
                      - name: LANGCHAIN_TRACING_V2
                        valueFrom:
                          secretKeyRef:
                            name: langchain-tracing-v2
-                           key: latest
+                           key: "2"
                      - name: LANGCHAIN_ENDPOINT
                        valueFrom:
                          secretKeyRef:
                            name: langchain-endpoint
-                           key: latest
+                           key: "2"
                      - name: LANGCHAIN_API_KEY
                        valueFrom:
                          secretKeyRef:
                            name: langchain-api-key
-                           key: latest
+                           key: "2"
                      - name: LANGCHAIN_PROJECT
                        valueFrom:
                          secretKeyRef:
                            name: langchain-project
-                           key: latest
+                           key: "2"
                      - name: CORS_ORIGINS
                        valueFrom:
                          secretKeyRef:
                            name: cors-origins
-                           key: latest
+                           key: "2"
          EOF
 
   # Cloud Runへのデプロイ
