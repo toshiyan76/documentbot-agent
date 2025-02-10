@@ -28,7 +28,7 @@ steps:
       - '--cache-from'
       - 'us-central1-docker.pkg.dev/$PROJECT_ID/docubot-repo/frontend'
       - '--build-arg'
-      - 'NEXT_PUBLIC_API_URL=/api'
+      - 'NEXT_PUBLIC_API_URL=http://localhost:8080'
       - '.'
 
   # Push the backend container image
