@@ -12,11 +12,9 @@ load_dotenv()
 app = FastAPI()
 
 # CORS設定
-# CORS設定を環境変数から取得
-cors_origins = os.getenv("CORS_ORIGINS", "https://document-agent.site").split(",")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=cors_origins,
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
