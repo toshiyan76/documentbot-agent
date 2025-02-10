@@ -54,7 +54,7 @@ steps:
            template:
              metadata:
                annotations:
-                 run.googleapis.com/secrets: openai-api-key:projects/$PROJECT_ID/secrets/openai_api_key:1,langchain-tracing:projects/$PROJECT_ID/secrets/langchain_tracing_v2:1,langchain-endpoint:projects/$PROJECT_ID/secrets/langchain_endpoint:1,langchain-api-key:projects/$PROJECT_ID/secrets/langchain_api_key:1,langchain-project:projects/$PROJECT_ID/secrets/langchain_project:1,cors-origins:projects/$PROJECT_ID/secrets/cors_origins:1
+                 run.googleapis.com/secrets: openai-api:projects/273148242685/secrets/openai_api_key,langchain-tracing:projects/273148242685/secrets/langchain_tracing_v2,langchain-endpoint:projects/273148242685/secrets/langchain_endpoint,langchain-api-key:projects/273148242685/secrets/langchain_api_key,langchain-project:projects/273148242685/secrets/langchain_project,cors-origins:projects/273148242685/secrets/cors_origins
              spec:
                containers:
                  - name: frontend
@@ -72,32 +72,32 @@ steps:
                      - name: OPENAI_API_KEY
                        valueFrom:
                          secretKeyRef:
-                           name: openai_api_key
+                           name: openai-api
                            key: "1"
                      - name: LANGCHAIN_TRACING_V2
                        valueFrom:
                          secretKeyRef:
-                           name: langchain_tracing_v2
+                           name: langchain-tracing
                            key: "1"
                      - name: LANGCHAIN_ENDPOINT
                        valueFrom:
                          secretKeyRef:
-                           name: langchain_endpoint
+                           name: langchain-endpoint
                            key: "1"
                      - name: LANGCHAIN_API_KEY
                        valueFrom:
                          secretKeyRef:
-                           name: langchain_api_key
+                           name: langchain-api-key
                            key: "1"
                      - name: LANGCHAIN_PROJECT
                        valueFrom:
                          secretKeyRef:
-                           name: langchain_project
+                           name: langchain-project
                            key: "1"
                      - name: CORS_ORIGINS
                        valueFrom:
                          secretKeyRef:
-                           name: cors_origins
+                           name: cors-origins
                            key: "1"
          EOF
 
