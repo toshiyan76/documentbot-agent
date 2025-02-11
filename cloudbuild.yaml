@@ -1,5 +1,4 @@
 options:
-  logging: CLOUD_LOGGING_ONLY
   dynamicSubstitutions: true
 
 steps:
@@ -7,41 +6,25 @@ steps:
   - name: 'gcr.io/cloud-builders/gcloud'
     args: ['auth', 'configure-docker', 'us-central1-docker.pkg.dev']
 
-  # Copy backend files
-  - name: 'gcr.io/cloud-builders/gcloud'
-    entrypoint: 'bash'
-    args:
-      - '-c'
-      - |
-        mkdir -p /workspace/build/backend
-        cp -r backend/* /workspace/build/backend/
-
   # Build the backend container image
   - name: 'gcr.io/cloud-builders/docker'
+    dir: 'backend'
     args:
       - 'build'
       - '-t'
       - 'us-central1-docker.pkg.dev/$PROJECT_ID/docubot-repo/backend'
-      - '/workspace/build/backend'
-
-  # Copy frontend files
-  - name: 'gcr.io/cloud-builders/gcloud'
-    entrypoint: 'bash'
-    args:
-      - '-c'
-      - |
-        mkdir -p /workspace/build/frontend
-        cp -r frontend/* /workspace/build/frontend/
+      - '.'
 
   # Build the frontend container image
   - name: 'gcr.io/cloud-builders/docker'
+    dir: 'frontend'
     args:
       - 'build'
       - '-t'
       - 'us-central1-docker.pkg.dev/$PROJECT_ID/docubot-repo/frontend'
       - '--build-arg'
       - 'NEXT_PUBLIC_API_URL=http://localhost:8080'
-      - '/workspace/build/frontend'
+      - '.'
 
   # Push the backend container image
   - name: 'gcr.io/cloud-builders/docker'
@@ -66,7 +49,7 @@ steps:
            template:
              metadata:
                annotations:
-                 run.googleapis.com/secrets: openai_api_key:projects/$PROJECT_NUMBER/secrets/openai_api_key/versions/latest,langchain_tracing_v2:projects/$PROJECT_NUMBER/secrets/langchain_tracing_v2/versions/latest,langchain_endpoint:projects/$PROJECT_NUMBER/secrets/langchain_endpoint/versions/latest,langchain_api_key:projects/$PROJECT_NUMBER/secrets/langchain_api_key/versions/latest,langchain_project:projects/$PROJECT_NUMBER/secrets/langchain_project/versions/latest,cors_origins:projects/$PROJECT_NUMBER/secrets/cors_origins/versions/latest
+                 run.googleapis.com/secrets: openai_api_key:projects/$PROJECT_NUMBER/secrets/openai_api_key,langchain_tracing_v2:projects/$PROJECT_NUMBER/secrets/langchain_tracing_v2,langchain_endpoint:projects/$PROJECT_NUMBER/secrets/langchain_endpoint,langchain_api_key:projects/$PROJECT_NUMBER/secrets/langchain_api_key,langchain_project:projects/$PROJECT_NUMBER/secrets/langchain_project,cors_origins:projects/$PROJECT_NUMBER/secrets/cors_origins
              spec:
                containers:
                  - name: frontend
