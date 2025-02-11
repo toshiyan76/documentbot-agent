@@ -65,8 +65,6 @@ steps:
                        value: "/api"
                  - name: backend
                    image: us-central1-docker.pkg.dev/$PROJECT_ID/docubot-repo/backend
-                   ports:
-                     - containerPort: 8080
                    startupProbe:
                      httpGet:
                        path: /health
