@@ -104,31 +104,6 @@ steps:
                          secretKeyRef:
                            name: cors_origins
                            key: latest
-                     - name: LANGCHAIN_TRACING_V2
-                       valueFrom:
-                         secretKeyRef:
-                           name: langchain_tracing_v2
-                           key: latest
-                     - name: LANGCHAIN_ENDPOINT
-                       valueFrom:
-                         secretKeyRef:
-                           name: langchain_endpoint
-                           key: latest
-                     - name: LANGCHAIN_API_KEY
-                       valueFrom:
-                         secretKeyRef:
-                           name: langchain_api_key
-                           key: latest
-                     - name: LANGCHAIN_PROJECT
-                       valueFrom:
-                         secretKeyRef:
-                           name: langchain_project
-                           key: latest
-                     - name: CORS_ORIGINS
-                       valueFrom:
-                         secretKeyRef:
-                           name: cors_origins
-                           key: latest
          EOF
 
   # Cloud Runへのデプロイ
