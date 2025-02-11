@@ -14,8 +14,6 @@ steps:
       - 'build'
       - '-t'
       - 'us-central1-docker.pkg.dev/$PROJECT_ID/docubot-repo/backend'
-      - '--cache-from'
-      - 'us-central1-docker.pkg.dev/$PROJECT_ID/docubot-repo/backend'
       - '.'
 
   # Build the frontend container image
@@ -24,8 +22,6 @@ steps:
     args:
       - 'build'
       - '-t'
-      - 'us-central1-docker.pkg.dev/$PROJECT_ID/docubot-repo/frontend'
-      - '--cache-from'
       - 'us-central1-docker.pkg.dev/$PROJECT_ID/docubot-repo/frontend'
       - '--build-arg'
       - 'NEXT_PUBLIC_API_URL=http://localhost:8080'
