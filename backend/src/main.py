@@ -51,7 +51,7 @@ class ChatRequest(BaseModel):
 
 # エージェント初期化
 llm = ChatOpenAI(
-    model_name="gpt-4"  # または "gpt-3.5-turbo" など
+    model_name="gpt-4o"  # または "gpt-3.5-turbo" など
 )
 agent = DocumentationAgent(llm=llm)
 
