@@ -7,15 +7,31 @@ steps:
   - name: 'gcr.io/cloud-builders/gcloud'
     args: ['auth', 'configure-docker', 'us-central1-docker.pkg.dev']
 
+  # Copy backend files
+  - name: 'gcr.io/cloud-builders/gcloud'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        mkdir -p /workspace/build/backend
+        cp -r backend/* /workspace/build/backend/
+
   # Build the backend container image
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'build'
       - '-t'
       - 'us-central1-docker.pkg.dev/$PROJECT_ID/docubot-repo/backend'
-      - '-f'
-      - 'backend/Dockerfile'
-      - 'backend'
+      - '/workspace/build/backend'
+
+  # Copy frontend files
+  - name: 'gcr.io/cloud-builders/gcloud'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        mkdir -p /workspace/build/frontend
+        cp -r frontend/* /workspace/build/frontend/
 
   # Build the frontend container image
   - name: 'gcr.io/cloud-builders/docker'
@@ -25,9 +41,7 @@ steps:
       - 'us-central1-docker.pkg.dev/$PROJECT_ID/docubot-repo/frontend'
       - '--build-arg'
       - 'NEXT_PUBLIC_API_URL=http://localhost:8080'
-      - '-f'
-      - 'frontend/Dockerfile'
-      - 'frontend'
+      - '/workspace/build/frontend'
 
   # Push the backend container image
   - name: 'gcr.io/cloud-builders/docker'
