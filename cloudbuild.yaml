@@ -63,6 +63,12 @@ steps:
                        value: "http://localhost:8080"
                  - name: backend
                    image: us-central1-docker.pkg.dev/$PROJECT_ID/docubot-repo/backend
+                   startupProbe:
+                     tcpSocket:
+                       port: 8080
+                     periodSeconds: 1
+                     failureThreshold: 30
+                     timeoutSeconds: 1
                    env:
                      - name: PORT
                        value: "8080"
