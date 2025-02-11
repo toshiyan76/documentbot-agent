@@ -24,7 +24,7 @@ steps:
       - '-t'
       - 'us-central1-docker.pkg.dev/$PROJECT_ID/docubot-repo/frontend'
       - '--build-arg'
-      - 'NEXT_PUBLIC_API_URL=http://localhost:8080'
+      - 'NEXT_PUBLIC_API_URL=/api'
       - '.'
 
   # Push the backend container image
@@ -52,6 +52,8 @@ steps:
                annotations:
                  run.googleapis.com/secrets: openai_api_key:projects/$PROJECT_NUMBER/secrets/openai_api_key,langchain_tracing_v2:projects/$PROJECT_NUMBER/secrets/langchain_tracing_v2,langchain_endpoint:projects/$PROJECT_NUMBER/secrets/langchain_endpoint,langchain_api_key:projects/$PROJECT_NUMBER/secrets/langchain_api_key,langchain_project:projects/$PROJECT_NUMBER/secrets/langchain_project,cors_origins:projects/$PROJECT_NUMBER/secrets/cors_origins
                  run.googleapis.com/container-dependencies: '{"frontend":["backend"]}'
+                 run.googleapis.com/execution-environment: "gen2"
+                 
              spec:
                containers:
                  - name: frontend
@@ -60,9 +62,11 @@ steps:
                      - containerPort: 3000
                    env:
                      - name: NEXT_PUBLIC_API_URL
-                       value: "http://localhost:8080"
+                       value: "/api"
                  - name: backend
                    image: us-central1-docker.pkg.dev/$PROJECT_ID/docubot-repo/backend
+                   ports:
+                     - containerPort: 8080
                    startupProbe:
                      httpGet:
                        path: /health
@@ -70,24 +74,26 @@ steps:
                      initialDelaySeconds: 5
                      periodSeconds: 2
                      failureThreshold: 30
-                     timeoutSeconds: 1
+                   livenessProbe:
+                     httpGet:
+                       path: /health
+                       port: 8080
+                     periodSeconds: 30
+                     timeoutSeconds: 4
+                   readinessProbe:
+                     httpGet:
+                       path: /health
+                       port: 8080
+                     periodSeconds: 10
                    env:
                      - name: PORT
                        value: "8080"
+                     - name: CORS_ORIGINS
+                       value: "https://document-agent.site"
                      - name: OPENAI_API_KEY
                        valueFrom:
                          secretKeyRef:
                            name: openai_api_key
-                           key: latest
-                     - name: LANGCHAIN_TRACING_V2
-                       valueFrom:
-                         secretKeyRef:
-                           name: langchain_tracing_v2
-                           key: latest
-                     - name: LANGCHAIN_ENDPOINT
-                       valueFrom:
-                         secretKeyRef:
-                           name: langchain_endpoint
                            key: latest
                      - name: LANGCHAIN_API_KEY
                        valueFrom:
@@ -99,11 +105,10 @@ steps:
                          secretKeyRef:
                            name: langchain_project
                            key: latest
-                     - name: CORS_ORIGINS
-                       valueFrom:
-                         secretKeyRef:
-                           name: cors_origins
-                           key: latest
+                     - name: LANGCHAIN_TRACING_V2
+                       value: "true"
+                     - name: LANGCHAIN_ENDPOINT
+                       value: "https://api.smith.langchain.com"
          EOF
 
   # Cloud Runへのデプロイ
