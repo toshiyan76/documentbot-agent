@@ -95,7 +95,7 @@ steps:
     - |
       SERVICE_URL=$(gcloud run services describe docubot-service --region us-central1 --format='value(status.url)')
       echo "Service URL: $$SERVICE_URL"
-      echo "SERVICE_URL=$$SERVICE_URL" >> $CLOUD_BUILD_OUTPUT_DIR/service_url.env
+      echo "$$SERVICE_URL" > /workspace/service_url.txt
 
   # CORS_ORIGINS を更新した service.yaml を生成
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
@@ -103,7 +103,7 @@ steps:
     args:
     - '-c'
     - |
-      source $CLOUD_BUILD_OUTPUT_DIR/service_url.env
+      SERVICE_URL=$$(cat /workspace/service_url.txt)
       cat service.yaml | sed "s|CORS_ORIGINS=.*|CORS_ORIGINS=$$SERVICE_URL|" > updated_service.yaml
       cat updated_service.yaml
 
