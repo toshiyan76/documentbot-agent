@@ -45,15 +45,10 @@ steps:
          apiVersion: serving.knative.dev/v1
          kind: Service
          metadata:
+           annotations:
            name: docubot-service
          spec:
            template:
-             metadata:
-               annotations:
-                 run.googleapis.com/secrets: openai_api_key:projects/$PROJECT_NUMBER/secrets/openai_api_key,langchain_tracing_v2:projects/$PROJECT_NUMBER/secrets/langchain_tracing_v2,langchain_endpoint:projects/$PROJECT_NUMBER/secrets/langchain_endpoint,langchain_api_key:projects/$PROJECT_NUMBER/secrets/langchain_api_key,langchain_project:projects/$PROJECT_NUMBER/secrets/langchain_project,cors_origins:projects/$PROJECT_NUMBER/secrets/cors_origins
-                 run.googleapis.com/container-dependencies: '{"frontend":["backend"]}'
-                 run.googleapis.com/execution-environment: "gen2"
-                 
              spec:
                containers:
                  - name: frontend
@@ -62,32 +57,14 @@ steps:
                      - containerPort: 3000
                    env:
                      - name: NEXT_PUBLIC_API_URL
-                       value: "/api"
+                       value: "http://localhost:8080"
                  - name: backend
                    image: us-central1-docker.pkg.dev/$PROJECT_ID/docubot-repo/backend
-                   startupProbe:
-                     httpGet:
-                       path: /health
-                       port: 8080
-                     initialDelaySeconds: 5
-                     periodSeconds: 2
-                     failureThreshold: 30
-                   livenessProbe:
-                     httpGet:
-                       path: /health
-                       port: 8080
-                     periodSeconds: 30
-                     timeoutSeconds: 4
-                   readinessProbe:
-                     httpGet:
-                       path: /health
-                       port: 8080
-                     periodSeconds: 10
                    env:
                      - name: PORT
                        value: "8080"
                      - name: CORS_ORIGINS
-                       value: "https://document-agent.site"
+                       value: "http://localhost:3000"
                      - name: OPENAI_API_KEY
                        valueFrom:
                          secretKeyRef:
