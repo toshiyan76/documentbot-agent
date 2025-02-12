@@ -85,6 +85,7 @@ steps:
                      - name: LANGCHAIN_ENDPOINT
                        value: "https://api.smith.langchain.com"
          EOF
+
   # Cloud Run URL を取得
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     id: 'get-url'
