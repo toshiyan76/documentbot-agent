@@ -55,7 +55,7 @@ llm = ChatOpenAI(
 )
 agent = DocumentationAgent(llm=llm)
 
-@app.get("/health")
+@app.get("/api/health")
 async def health_check():
     """
     ヘルスチェックエンドポイント
@@ -73,7 +73,7 @@ async def health_check():
         "environment": env_status
     }
 
-@app.post("/chat")
+@app.post("/api/chat")
 async def chat_endpoint(request: ChatRequest):
     """
     チャットエンドポイント
