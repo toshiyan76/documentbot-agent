@@ -85,16 +85,16 @@ steps:
                      - name: LANGCHAIN_ENDPOINT
                        value: "https://api.smith.langchain.com"
          EOF
-     # Cloud Run URL を取得
-     - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-       id: 'get-url'
-       entrypoint: 'bash'
-       args:
-       - '-c'
-       - |
-         SERVICE_URL=$(gcloud run services describe docubot-service --region us-central1 --format='value(status.url)')
-         echo "Service URL: $$SERVICE_URL"
-         echo "SERVICE_URL=$$SERVICE_URL" >> $CLOUD_BUILD_OUTPUT_DIR/service_url.env
+  # Cloud Run URL を取得
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    id: 'get-url'
+    entrypoint: 'bash'
+    args:
+    - '-c'
+    - |
+      SERVICE_URL=$(gcloud run services describe docubot-service --region us-central1 --format='value(status.url)')
+      echo "Service URL: $$SERVICE_URL"
+      echo "SERVICE_URL=$$SERVICE_URL" >> $CLOUD_BUILD_OUTPUT_DIR/service_url.env
 
   # CORS_ORIGINS を更新した service.yaml を生成
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
