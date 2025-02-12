@@ -1,12 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: "standalone",
-  poweredByHeader: false,
-  compress: true,
-  generateEtags: true,
-  httpAgentOptions: {
-    keepAlive: true,
-  },
   experimental: {
     serverMinification: true,
     serverTimeout: 60000, // 60秒
