@@ -96,26 +96,26 @@ steps:
          echo "Service URL: $$SERVICE_URL"
          echo "SERVICE_URL=$$SERVICE_URL" >> $CLOUD_BUILD_OUTPUT_DIR/service_url.env
 
-     # CORS_ORIGINS を更新した service.yaml を生成
-     - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-       entrypoint: 'bash'
-       args:
-       - '-c'
-       - |
-         source $CLOUD_BUILD_OUTPUT_DIR/service_url.env
-         cat service.yaml | sed "s|CORS_ORIGINS=.*|CORS_ORIGINS=$$SERVICE_URL|" > updated_service.yaml
-         cat updated_service.yaml
+  # CORS_ORIGINS を更新した service.yaml を生成
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'bash'
+    args:
+    - '-c'
+    - |
+      source $CLOUD_BUILD_OUTPUT_DIR/service_url.env
+      cat service.yaml | sed "s|CORS_ORIGINS=.*|CORS_ORIGINS=$$SERVICE_URL|" > updated_service.yaml
+      cat updated_service.yaml
 
-     # Cloud Runへのデプロイ
-     - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-       entrypoint: 'gcloud'
-       args:
-         - 'run'
-         - 'services'
-         - 'replace'
-         - 'updated_service.yaml'
-         - '--region'
-         - 'us-central1'
+  # Cloud Runへのデプロイ
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'gcloud'
+    args:
+      - 'run'
+      - 'services'
+      - 'replace'
+      - 'updated_service.yaml'
+      - '--region'
+      - 'us-central1'
 
 images:
  - 'us-central1-docker.pkg.dev/$PROJECT_ID/docubot-repo/backend'
