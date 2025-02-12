@@ -57,7 +57,7 @@ steps:
                      - containerPort: 3000
                    env:
                      - name: NEXT_PUBLIC_API_URL
-                       value: "http://localhost:8080"
+                       value: "/api"
                  - name: backend
                    image: us-central1-docker.pkg.dev/$PROJECT_ID/docubot-repo/backend
                    env:
