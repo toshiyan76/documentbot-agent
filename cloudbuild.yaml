@@ -85,18 +85,39 @@ steps:
                      - name: LANGCHAIN_ENDPOINT
                        value: "https://api.smith.langchain.com"
          EOF
+     
+     # Cloud Run URL を取得
+     - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+       id: 'get-url'
+       entrypoint: 'bash'
+       args:
+       - '-c'
+       - |
+         SERVICE_URL=$(gcloud run services describe docubot-service --region us-central1 --format='value(status.url)')
+         echo "Service URL: $$SERVICE_URL"
+         echo "SERVICE_URL=$$SERVICE_URL" >> $CLOUD_BUILD_OUTPUT_DIR/service_url.env
 
-  # Cloud Runへのデプロイ
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    entrypoint: 'gcloud'
-    args:
-      - 'run'
-      - 'services'
-      - 'replace'
-      - 'service.yaml'
-      - '--region'
-      - 'us-central1'
+     # CORS_ORIGINS を更新した service.yaml を生成
+     - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+       entrypoint: 'bash'
+       args:
+       - '-c'
+       - |
+         source $CLOUD_BUILD_OUTPUT_DIR/service_url.env
+         cat service.yaml | sed "s|CORS_ORIGINS=.*|CORS_ORIGINS=$$SERVICE_URL|" > updated_service.yaml
+         cat updated_service.yaml
+
+     # Cloud Runへのデプロイ
+     - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+       entrypoint: 'gcloud'
+       args:
+         - 'run'
+         - 'services'
+         - 'replace'
+         - 'updated_service.yaml'
+         - '--region'
+         - 'us-central1'
 
 images:
-  - 'us-central1-docker.pkg.dev/$PROJECT_ID/docubot-repo/backend'
-  - 'us-central1-docker.pkg.dev/$PROJECT_ID/docubot-repo/frontend'
+ - 'us-central1-docker.pkg.dev/$PROJECT_ID/docubot-repo/backend'
+ - 'us-central1-docker.pkg.dev/$PROJECT_ID/docubot-repo/frontend'
