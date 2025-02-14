@@ -114,7 +114,12 @@ app.add_middleware(TimeoutMiddleware, timeout=600)
 # CORS設定
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # フロントエンドのオリジン
+    allow_origins=[
+        "http://localhost:3000",  # ローカル開発用
+        "https://docubot-service-273148242685.us-central1.run.app",  # Cloud Run URL
+        "https://docubot-service-6clcwh25pq-uc.a.run.app",  # Cloud Run URL
+        "https://document-agent.site"  # カスタムドメイン
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
