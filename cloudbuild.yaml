@@ -118,7 +118,7 @@ steps:
       - '-c'
       - |
         BACKEND_URL=$(gcloud run services describe backend-service --region us-central1 --format='value(status.url)')
-        cat > frontend-service.yaml <<EOF
+        cat > frontend-service.yaml <<'EOF'
         apiVersion: serving.knative.dev/v1
         kind: Service
         metadata:
@@ -140,8 +140,24 @@ steps:
                     - name: NEXT_PUBLIC_API_URL
                       value: "/api"
                     - name: BACKEND_URL
-                      value: "$BACKEND_URL"
+                      valueFrom:
+                        configMapKeyRef:
+                          name: backend-config
+                          key: url
         EOF
+
+        # Create ConfigMap for backend URL
+        cat > backend-config.yaml <<EOF
+        apiVersion: v1
+        kind: ConfigMap
+        metadata:
+          name: backend-config
+        data:
+          url: "$BACKEND_URL"
+        EOF
+
+        # Apply ConfigMap
+        kubectl apply -f backend-config.yaml
 
   # IAM設定：フロントエンドにバックエンドへのアクセス権限を付与
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
