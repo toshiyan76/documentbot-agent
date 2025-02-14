@@ -1,4 +1,5 @@
 import logging
+import uuid
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -10,24 +11,31 @@ from langchain_openai import ChatOpenAI
 # ロギングの設定
 import sys
 import json
-from google.cloud import logging as cloud_logging
 
-# Cloud Run環境でのCloud Loggingの設定
-try:
-    client = cloud_logging.Client()
-    handler = cloud_logging.handlers.CloudLoggingHandler(client)
-    cloud_logger = logging.getLogger('cloudLogger')
-    cloud_logger.setLevel(logging.INFO)
-    cloud_logger.addHandler(handler)
-except Exception as e:
-    print(f"Failed to initialize Cloud Logging: {e}")
+# 環境変数でCloud Run環境を判別
+is_cloud_run = os.getenv('K_SERVICE') is not None
 
-# 通常のロギング設定
+# ロギング設定
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+# Cloud Run環境でのみ Cloud Loggingを設定
+if is_cloud_run:
+    try:
+        from google.cloud import logging as cloud_logging
+        client = cloud_logging.Client()
+        handler = cloud_logging.handlers.CloudLoggingHandler(client)
+        cloud_logger = logging.getLogger('cloudLogger')
+        cloud_logger.setLevel(logging.INFO)
+        cloud_logger.addHandler(handler)
+        logger.info("Cloud Logging initialized successfully")
+    except Exception as e:
+        logger.warning(f"Failed to initialize Cloud Logging: {e}")
+        cloud_logger = logger  # フォールバックとして通常のロガーを使用
+
 
 # .envファイルを読み込む
 load_dotenv()
@@ -120,23 +128,29 @@ async def chat_endpoint(request: ChatRequest, background_tasks: BackgroundTasks)
     request_id = str(uuid.uuid4())
     try:
         # リクエスト情報のロギング
-        logger.info(f"Request ID: {request_id} - Starting request processing")
-        cloud_logger.info(f"Request ID: {request_id} - Starting request processing")
+        log_message = f"Request ID: {request_id} - Starting request processing"
+        logger.info(log_message)
+        if is_cloud_run:
+            cloud_logger.info(log_message)
 
         # 環境変数のチェック
         required_env_vars = ['OPENAI_API_KEY', 'LANGCHAIN_API_KEY', 'LANGCHAIN_PROJECT']
         missing_vars = [var for var in required_env_vars if not os.getenv(var)]
         if missing_vars:
             error_msg = f"Missing required environment variables: {', '.join(missing_vars)}"
-            logger.error(f"Request ID: {request_id} - {error_msg}")
-            cloud_logger.error(f"Request ID: {request_id} - {error_msg}")
+            log_message = f"Request ID: {request_id} - {error_msg}"
+            logger.error(log_message)
+            if is_cloud_run:
+                cloud_logger.error(log_message)
             raise ValueError(error_msg)
 
         # リクエストの検証
         if not request.message or not request.message.strip():
             error_msg = "Empty message received"
-            logger.error(f"Request ID: {request_id} - {error_msg}")
-            cloud_logger.error(f"Request ID: {request_id} - {error_msg}")
+            log_message = f"Request ID: {request_id} - {error_msg}"
+            logger.error(log_message)
+            if is_cloud_run:
+                cloud_logger.error(log_message)
             raise ValueError(error_msg)
 
         # デバッグログ
