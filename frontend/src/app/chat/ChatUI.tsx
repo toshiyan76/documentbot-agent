@@ -13,8 +13,7 @@ export default function ChatUI() {
       setIsLoading(true)
       const userMessage = { role: 'user', content: input }
       setMessages(prev => [...prev, userMessage])
-      const backendUrl:string = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
-      const response = await fetch(`${backendUrl}/api/chat`, {
+      const response = await fetch('/api/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
