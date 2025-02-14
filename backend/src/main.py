@@ -96,7 +96,7 @@ async def chat_endpoint(request: ChatRequest):
         print("Error occurred:", error_detail)
         raise HTTPException(status_code=500, detail=error_detail)
 
-# if __name__ == "__main__":
-#     import uvicorn
-#     port = int(os.getenv("PORT", "8080"))
-#     uvicorn.run(app, host="0.0.0.0", port=port, debug=True)
+if __name__ == "__main__":
+    import uvicorn
+    port = int(os.getenv("PORT", "8081"))
+    uvicorn.run(app, host="0.0.0.0", port=port, debug=True)
