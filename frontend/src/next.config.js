@@ -37,15 +37,8 @@ const nextConfig = {
   async rewrites() {
     return [
       {
-        source: "/api/:path*",
-        destination: "http://backend:8081/api/:path*",
-        has: [
-          {
-            type: 'header',
-            key: 'connection',
-            value: '(.*?)',
-          },
-        ],
+        source: '/api/:path*',
+        destination: `${process.env.BACKEND_URL}/api/:path*`,
       },
     ];
   },

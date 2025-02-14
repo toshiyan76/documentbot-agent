@@ -7,33 +7,21 @@ steps:
   - name: 'gcr.io/cloud-builders/gcloud'
     args: ['auth', 'configure-docker', 'us-central1-docker.pkg.dev']
 
-  # Build the backend container image
+  # Build backend image
   - name: 'gcr.io/cloud-builders/docker'
-    dir: 'backend'
-    args:
-      - 'build'
-      - '-t'
-      - 'us-central1-docker.pkg.dev/$PROJECT_ID/docubot-repo/backend'
-      - '.'
+    args: ['build', '-t', 'us-central1-docker.pkg.dev/$PROJECT_ID/backend-repo/backend:latest', '-f', 'backend/Dockerfile', 'backend/']
 
-  # Build the frontend container image
+  # Build frontend image
   - name: 'gcr.io/cloud-builders/docker'
-    dir: 'frontend'
-    args:
-      - 'build'
-      - '-t'
-      - 'us-central1-docker.pkg.dev/$PROJECT_ID/docubot-repo/frontend'
-      - '--build-arg'
-      - 'NEXT_PUBLIC_API_URL=/api'
-      - '.'
+    args: ['build', '-t', 'us-central1-docker.pkg.dev/$PROJECT_ID/frontend-repo/frontend:latest', '-f', 'frontend/Dockerfile', 'frontend/']
 
-  # Push the backend container image
+  # Push backend image
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'us-central1-docker.pkg.dev/$PROJECT_ID/docubot-repo/backend']
+    args: ['push', 'us-central1-docker.pkg.dev/$PROJECT_ID/backend-repo/backend:latest']
 
-  # Push the frontend container image
+  # Push frontend image
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['push', 'us-central1-docker.pkg.dev/$PROJECT_ID/docubot-repo/frontend']
+    args: ['push', 'us-central1-docker.pkg.dev/$PROJECT_ID/frontend-repo/frontend:latest']
 
     # service.yamlを生成（テンプレートとして）
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
