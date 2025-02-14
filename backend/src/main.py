@@ -1,16 +1,17 @@
 import logging
 import uuid
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel
 import os
 from dotenv import load_dotenv
 from docubot_agent.main import DocumentationAgent
 from langchain_openai import ChatOpenAI
+import json
 
 # ロギングの設定
 import sys
-import json
 
 # 環境変数でCloud Run環境を判別
 is_cloud_run = os.getenv('K_SERVICE') is not None
@@ -57,19 +58,58 @@ for var in required_env_vars:
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
 
-class TimeoutMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request, call_next):
+# タイムアウトミドルウェアを更新
+import asyncio
+from typing import Callable, Awaitable
+
+class TimeoutMiddleware:
+    def __init__(self, app, timeout: int = 600):
+        self.app = app
+        self.timeout = timeout
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        # カスタムsend関数を作成してレスポンスを監視
+        response_started = False
+        original_messages = []
+
+        async def custom_send(message):
+            nonlocal response_started
+            if message["type"] == "http.response.start":
+                response_started = True
+            original_messages.append(message)
+            await send(message)
+
         try:
-            response = await call_next(request)
-            return response
+            # タイムアウト付きで実行
+            await asyncio.wait_for(
+                self.app(scope, receive, custom_send),
+                timeout=self.timeout
+            )
+        except asyncio.TimeoutError:
+            logger.error("Request timed out")
+            if not response_started:
+                response = JSONResponse(
+                    status_code=504,
+                    content={"detail": "Request timed out"},
+                )
+                await response(scope, receive, send)
         except Exception as e:
-            logger.error(f"Request processing error: {str(e)}")
-            return Response("Internal Server Error", status_code=500)
+            logger.error(f"Request failed: {e}")
+            if not response_started:
+                response = JSONResponse(
+                    status_code=500,
+                    content={"detail": "Internal server error"},
+                )
+                await response(scope, receive, send)
 
 app = FastAPI()
 
-# タイムアウトミドルウェアを追加
-app.add_middleware(TimeoutMiddleware)
+# タイムアウトミドルウェアを追加（10分のタイムアウト）
+app.add_middleware(TimeoutMiddleware, timeout=600)
 
 # CORS設定
 app.add_middleware(
@@ -121,95 +161,50 @@ from fastapi import BackgroundTasks
 
 @app.post("/api/chat")
 async def chat_endpoint(request: ChatRequest, background_tasks: BackgroundTasks):
-    """
-    チャットエンドポイント
-    ユーザーからのメッセージを受け取り、AIエージェントの応答を返す
-    """
     request_id = str(uuid.uuid4())
+    logger.info(f"Request ID: {request_id} - Starting request processing")
+    logger.info(f"Processing message: {request.message}")
+    
     try:
-        # リクエスト情報のロギング
-        log_message = f"Request ID: {request_id} - Starting request processing"
-        logger.info(log_message)
-        if is_cloud_run:
-            cloud_logger.info(log_message)
-
-        # 環境変数のチェック
-        required_env_vars = ['OPENAI_API_KEY', 'LANGCHAIN_API_KEY', 'LANGCHAIN_PROJECT']
-        missing_vars = [var for var in required_env_vars if not os.getenv(var)]
-        if missing_vars:
-            error_msg = f"Missing required environment variables: {', '.join(missing_vars)}"
-            log_message = f"Request ID: {request_id} - {error_msg}"
-            logger.error(log_message)
-            if is_cloud_run:
-                cloud_logger.error(log_message)
-            raise ValueError(error_msg)
-
-        # リクエストの検証
-        if not request.message or not request.message.strip():
-            error_msg = "Empty message received"
-            log_message = f"Request ID: {request_id} - {error_msg}"
-            logger.error(log_message)
-            if is_cloud_run:
-                cloud_logger.error(log_message)
-            raise ValueError(error_msg)
-
-        # デバッグログ
-        logger.info(f"Processing message: {request.message[:100]}...")
-        
-        # エージェント処理を呼び出し
-        try:
-            # エージェントの状態をログ
-            logger.info("Agent state before processing:")
-            logger.info(f"LLM model: {agent.llm.model_name}")
-            
-            response = agent.run(request.message)
-            
-            if not response:
-                raise ValueError("Agent returned empty response")
+        # ストリーミングレスポンスを作成
+        async def generate_response():
+            try:
+                # エージェントの状態をログに記録
+                logger.info("Agent state before processing:")
+                logger.info(f"LLM model: {agent.llm.model_name}")
                 
-            logger.info("Successfully generated response")
-            return {"response": response}
-            
-        except Exception as agent_error:
-            logger.error(f"Agent execution failed: {str(agent_error)}")
-            logger.error(f"Agent error type: {type(agent_error).__name__}")
-            
-            # エージェントのエラーを詳細に記録
-            if hasattr(agent_error, '__cause__') and agent_error.__cause__:
-                logger.error(f"Caused by: {str(agent_error.__cause__)}")
-            
-            raise HTTPException(
-                status_code=500,
-                detail={
-                    "error": "Agent Processing Error",
-                    "message": str(agent_error),
-                    "type": type(agent_error).__name__
-                }
-            )
-
-    except ValueError as ve:
-        logger.error(f"Validation error: {str(ve)}")
-        raise HTTPException(
-            status_code=400,
-            detail={
-                "error": "Validation Error",
-                "message": str(ve)
-            }
-        )
-    except HTTPException:
-        raise
-    except Exception as e:
-        import traceback
-        error_trace = traceback.format_exc()
-        logger.error(f"Unexpected error: {str(e)}\nTraceback: {error_trace}")
+                try:
+                    # 非同期でレスポンスを生成
+                    response = await asyncio.to_thread(
+                        agent.run,
+                        request.message
+                    )
+                    
+                    # レスポンスを文字列に変換してyieldする
+                    if isinstance(response, (dict, list)):
+                        yield json.dumps(response)
+                    else:
+                        yield str(response)
+                        
+                except Exception as e:
+                    logger.error(f"Error in agent.run: {str(e)}")
+                    yield json.dumps({
+                        "error": "Failed to process request",
+                        "details": str(e)
+                    })
+                    
+            except Exception as e:
+                logger.error(f"Error in generate_response: {e}")
+                yield json.dumps({"error": str(e)})
         
-        error_detail = {
-            "error": "Internal Server Error",
-            "message": str(e),
-            "type": type(e).__name__,
-            "traceback": error_trace
-        }
-        raise HTTPException(status_code=500, detail=error_detail)
+        return StreamingResponse(
+            generate_response(),
+            media_type="application/json"
+        )
+        
+    except Exception as e:
+        logger.error(f"Error processing request: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
     import uvicorn

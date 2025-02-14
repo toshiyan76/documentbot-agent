@@ -1,10 +1,53 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 export default function ChatUI() {
   const [input, setInput] = useState('')
   const [messages, setMessages] = useState<Array<{role: string, content: string}>>([])
   const [isLoading, setIsLoading] = useState(false)
+  const abortControllerRef = useRef<AbortController | null>(null)
+  const retryCountRef = useRef(0)
+  const MAX_RETRIES = 3
+
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+      }
+    }
+  }, [])
+
+  // タイムアウト付きのfetch関数
+  const fetchWithTimeout = async (
+    url: string, 
+    options: RequestInit & { timeoutMs?: number }
+  ): Promise<Response> => {
+    const { timeoutMs = 600000, ...fetchOptions } = options // デフォルト10分
+    abortControllerRef.current = new AbortController()
+
+    try {
+      const fetchPromise = fetch(url, {
+        ...fetchOptions,
+        signal: abortControllerRef.current.signal,
+      })
+
+      const timeoutPromise = new Promise<Response>((_, reject) => {
+        setTimeout(() => {
+          if (abortControllerRef.current) {
+            abortControllerRef.current.abort()
+          }
+          reject(new Error('Request timed out'))
+        }, timeoutMs)
+      })
+
+      return await Promise.race([fetchPromise, timeoutPromise])
+    } catch (error) {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+      }
+      throw error
+    }
+  }
 
   const handleSubmit = async () => {
     if (!input || isLoading) return
@@ -13,21 +56,64 @@ export default function ChatUI() {
       setIsLoading(true)
       const userMessage = { role: 'user', content: input }
       setMessages(prev => [...prev, userMessage])
-      const response = await fetch('/api/chat', {
+      
+      const response = await fetchWithTimeout('/api/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ message: input }),
+        timeoutMs: 600000, // 10分
       })
 
-      if (!response.ok) throw new Error('API Error')
-      
-      const data = await response.json()
-      setMessages(prev => [...prev, { role: 'assistant', content: data.response }])
+      if (!response.ok) {
+        throw new Error(`API Error: ${response.status}`)
+      }
+
+      const reader = response.body?.getReader()
+      if (!reader) throw new Error('Response body is null')
+
+      let assistantMessage = { role: 'assistant', content: '' }
+      setMessages(prev => [...prev, assistantMessage])
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+
+        const chunk = new TextDecoder().decode(value)
+        try {
+          const parsedChunk = JSON.parse(chunk)
+          assistantMessage.content = parsedChunk.response || parsedChunk
+          setMessages(prev => 
+            prev.map((msg, i) => 
+              i === prev.length - 1 ? assistantMessage : msg
+            )
+          )
+        } catch (e) {
+          console.warn('Failed to parse chunk:', e)
+          assistantMessage.content += chunk
+          setMessages(prev => 
+            prev.map((msg, i) => 
+              i === prev.length - 1 ? assistantMessage : msg
+            )
+          )
+        }
+      }
+
+      retryCountRef.current = 0
       
     } catch (error) {
       console.error('Error:', error)
+      
+      if (retryCountRef.current < MAX_RETRIES && 
+          error instanceof Error && 
+          (error.name === 'AbortError' || error.message.includes('socket') || error.message.includes('timeout'))) {
+        retryCountRef.current++
+        console.log(`Retrying... (${retryCountRef.current}/${MAX_RETRIES})`)
+        setTimeout(() => handleSubmit(), 1000 * Math.pow(2, retryCountRef.current))
+        return
+      }
+
       setMessages(prev => [...prev, { 
         role: 'assistant', 
         content: 'エラーが発生しました。もう一度お試しください。'
@@ -35,6 +121,7 @@ export default function ChatUI() {
     } finally {
       setInput('')
       setIsLoading(false)
+      abortControllerRef.current = null
     }
   }
 
