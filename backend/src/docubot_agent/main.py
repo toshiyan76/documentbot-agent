@@ -267,16 +267,45 @@ class RequirementsDocumentGenerator:
 
 
 # 要件定義書生成AIエージェントのクラス
+class AgentError(Exception):
+    """DocumentationAgentの基本エラークラス"""
+    pass
+
+class PersonaGenerationError(AgentError):
+    """ペルソナ生成時のエラー"""
+    pass
+
+class InterviewError(AgentError):
+    """インタビュー実施時のエラー"""
+    pass
+
+class EvaluationError(AgentError):
+    """情報評価時のエラー"""
+    pass
+
+class DocumentGenerationError(AgentError):
+    """要件定義書生成時のエラー"""
+    pass
+
 class DocumentationAgent:
     def __init__(self, llm: ChatOpenAI, k: Optional[int] = None):
-        # 各種ジェネレータの初期化
-        self.persona_generator = PersonaGenerator(llm=llm, k=k)
-        self.interview_conductor = InterviewConductor(llm=llm)
-        self.information_evaluator = InformationEvaluator(llm=llm)
-        self.requirements_generator = RequirementsDocumentGenerator(llm=llm)
+        if not isinstance(llm, ChatOpenAI):
+            raise ValueError("llm must be an instance of ChatOpenAI")
 
-        # グラフの作成
-        self.graph = self._create_graph()
+        try:
+            # LLMの保存
+            self.llm = llm
+
+            # 各種ジェネレータの初期化
+            self.persona_generator = PersonaGenerator(llm=self.llm, k=k)
+            self.interview_conductor = InterviewConductor(llm=self.llm)
+            self.information_evaluator = InformationEvaluator(llm=self.llm)
+            self.requirements_generator = RequirementsDocumentGenerator(llm=self.llm)
+
+            # グラフの作成
+            self.graph = self._create_graph()
+        except Exception as e:
+            raise AgentError(f"Failed to initialize DocumentationAgent: {str(e)}") from e
 
     def _create_graph(self) -> StateGraph:
         # グラフの初期化

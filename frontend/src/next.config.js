@@ -3,7 +3,11 @@ const nextConfig = {
   output: "standalone",
   experimental: {
     serverMinification: true,
-    serverTimeout: 60000, // 60秒
+    serverTimeout: 300000, // 300秒
+  },
+  httpAgentOptions: {
+    keepAlive: true,
+    timeout: 300000, // 300秒
   },
   async headers() {
     return [
@@ -22,9 +26,21 @@ const nextConfig = {
     return [
       {
         source: "/api/:path*",
-        destination: "http://localhost:8081/api/:path*",
+        destination: "http://backend:8081/api/:path*",
+        has: [
+          {
+            type: 'header',
+            key: 'connection',
+            value: '(.*?)',
+          },
+        ],
       },
     ];
+  },
+  serverOptions: {
+    maxHeaderSize: 32768, // 32KB
+    keepAliveTimeout: 300000, // 300秒
+    headersTimeout: 305000, // keepAliveTimeout + 5000 ms
   },
 };
 
