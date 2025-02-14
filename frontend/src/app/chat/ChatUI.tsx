@@ -26,6 +26,13 @@ export default function ChatUI() {
     abortControllerRef.current = new AbortController()
 
     try {
+      console.log('Starting fetch with options:', {
+        url,
+        method: options.method,
+        headers: options.headers,
+        timeout: timeoutMs
+      })
+
       const fetchPromise = fetch(url, {
         ...fetchOptions,
         signal: abortControllerRef.current.signal,
@@ -36,12 +43,17 @@ export default function ChatUI() {
           if (abortControllerRef.current) {
             abortControllerRef.current.abort()
           }
-          reject(new Error('Request timed out'))
+          reject(new Error(`Request timed out after ${timeoutMs}ms`))
         }, timeoutMs)
       })
 
       return await Promise.race([fetchPromise, timeoutPromise])
     } catch (error) {
+      console.error('Fetch error:', {
+        error: error,
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      })
       if (abortControllerRef.current) {
         abortControllerRef.current.abort()
       }
@@ -57,6 +69,7 @@ export default function ChatUI() {
       const userMessage = { role: 'user', content: input }
       setMessages(prev => [...prev, userMessage])
       
+      console.log('Sending request to:', '/api/chat')
       const response = await fetchWithTimeout('/api/chat', {
         method: 'POST',
         headers: {
@@ -66,12 +79,25 @@ export default function ChatUI() {
         timeoutMs: 600000, // 10分
       })
 
+      console.log('Response status:', response.status)
+      console.log('Response headers:', Object.fromEntries(response.headers.entries()))
+
       if (!response.ok) {
-        throw new Error(`API Error: ${response.status}`)
+        const errorText = await response.text()
+        console.error('API Error Details:', {
+          status: response.status,
+          statusText: response.statusText,
+          headers: Object.fromEntries(response.headers.entries()),
+          body: errorText
+        })
+        throw new Error(`API Error: ${response.status} - ${response.statusText}\nDetails: ${errorText}`)
       }
 
       const reader = response.body?.getReader()
-      if (!reader) throw new Error('Response body is null')
+      if (!reader) {
+        console.error('Response body is null')
+        throw new Error('Response body is null')
+      }
 
       let assistantMessage = { role: 'assistant', content: '' }
       setMessages(prev => [...prev, assistantMessage])
@@ -81,8 +107,10 @@ export default function ChatUI() {
         if (done) break
 
         const chunk = new TextDecoder().decode(value)
+        console.log('Received chunk:', chunk)
         try {
           const parsedChunk = JSON.parse(chunk)
+          console.log('Parsed chunk:', parsedChunk)
           assistantMessage.content = parsedChunk.response || parsedChunk
           setMessages(prev => 
             prev.map((msg, i) => 
@@ -90,7 +118,11 @@ export default function ChatUI() {
             )
           )
         } catch (e) {
-          console.warn('Failed to parse chunk:', e)
+          console.warn('Failed to parse chunk:', {
+            error: e,
+            chunk: chunk,
+            assistantMessage: assistantMessage
+          })
           assistantMessage.content += chunk
           setMessages(prev => 
             prev.map((msg, i) => 
@@ -103,7 +135,12 @@ export default function ChatUI() {
       retryCountRef.current = 0
       
     } catch (error) {
-      console.error('Error:', error)
+      console.error('Error in handleSubmit:', {
+        error: error,
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+        retryCount: retryCountRef.current
+      })
       
       if (retryCountRef.current < MAX_RETRIES && 
           error instanceof Error && 
@@ -116,7 +153,7 @@ export default function ChatUI() {
 
       setMessages(prev => [...prev, { 
         role: 'assistant', 
-        content: 'エラーが発生しました。もう一度お試しください。'
+        content: `エラーが発生しました: ${error instanceof Error ? error.message : '不明なエラー'}\n\n詳細はブラウザのコンソールを確認してください。`
       }])
     } finally {
       setInput('')
