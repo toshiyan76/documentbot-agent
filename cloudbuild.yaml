@@ -3,6 +3,34 @@ options:
   dynamicSubstitutions: true
 
 steps:
+  # VPCとサブネットの作成（存在しない場合のみ）
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        if ! gcloud compute networks describe vpc-direct-egress 2>/dev/null; then
+          gcloud compute networks create vpc-direct-egress --subnet-mode=custom
+          gcloud compute networks subnets create subnet-direct-egress \
+            --network=vpc-direct-egress \
+            --region=us-central1 \
+            --range=10.10.0.0/28 \
+            --enable-private-ip-google-access
+        fi
+
+  # サービスアカウントの作成（存在しない場合のみ）
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        if ! gcloud iam service-accounts describe backend-sa@$PROJECT_ID.iam.gserviceaccount.com 2>/dev/null; then
+          gcloud iam service-accounts create backend-sa --display-name="Backend Service Account"
+        fi
+        if ! gcloud iam service-accounts describe frontend-sa@$PROJECT_ID.iam.gserviceaccount.com 2>/dev/null; then
+          gcloud iam service-accounts create frontend-sa --display-name="Frontend Service Account"
+        fi
+
   # Configure docker auth
   - name: 'gcr.io/cloud-builders/gcloud'
     args: ['auth', 'configure-docker', 'us-central1-docker.pkg.dev']
@@ -23,97 +51,120 @@ steps:
   - name: 'gcr.io/cloud-builders/docker'
     args: ['push', 'us-central1-docker.pkg.dev/$PROJECT_ID/frontend-repo/frontend:latest']
 
-    # service.yamlを生成（テンプレートとして）
+  # バックエンドサービスのデプロイ用YAMLを生成
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: bash
     args:
       - -c
       - |
-         cat > service.yaml <<'EOF'
-         apiVersion: serving.knative.dev/v1
-         kind: Service
-         metadata:
-           annotations:
-           name: docubot-service
-         spec:
-           template:
-             spec:
-               containers:
-                 - name: frontend
-                   image: us-central1-docker.pkg.dev/$PROJECT_ID/docubot-repo/frontend
-                   ports:
-                     - containerPort: 3000
-                   env:
-                     - name: NEXT_PUBLIC_API_URL
-                       value: "/api"
-                 - name: backend
-                   image: us-central1-docker.pkg.dev/$PROJECT_ID/docubot-repo/backend
-                   env:
-                     - name: PORT
-                       value: "8081"
-                     - name: OPENAI_API_KEY
-                       valueFrom:
-                         secretKeyRef:
-                           name: openai_api_key
-                           key: latest
-                     - name: LANGCHAIN_API_KEY
-                       valueFrom:
-                         secretKeyRef:
-                           name: langchain_api_key
-                           key: latest
-                     - name: LANGCHAIN_PROJECT
-                       valueFrom:
-                         secretKeyRef:
-                           name: langchain_project
-                           key: latest
-                     - name: LANGCHAIN_TRACING_V2
-                       value: "true"
-                     - name: LANGCHAIN_ENDPOINT
-                       value: "https://api.smith.langchain.com"
-                   livenessProbe:
-                     httpGet:
-                       path: /api/health
-                       port: 8081
-                     initialDelaySeconds: 60
-                     periodSeconds: 30
-                     timeoutSeconds: 5
-                     failureThreshold: 3
-                   startupProbe:
-                     httpGet:
-                       path: /api/health
-                       port: 8081
-                     initialDelaySeconds: 30
-                     periodSeconds: 10
-                     timeoutSeconds: 5
-                     failureThreshold: 5
-                   resources:
-                     limits:
-                       cpu: 1000m
-                       memory: 256Mi
-         EOF
+        cat > backend-service.yaml <<'EOF'
+        apiVersion: serving.knative.dev/v1
+        kind: Service
+        metadata:
+          name: backend-service
+        spec:
+          template:
+            metadata:
+              annotations:
+                run.googleapis.com/ingress: internal
+            spec:
+              serviceAccountName: backend-sa
+              containers:
+                - name: backend
+                  image: us-central1-docker.pkg.dev/$PROJECT_ID/backend-repo/backend:latest
+                  env:
+                    - name: PORT
+                      value: "8081"
+                    - name: OPENAI_API_KEY
+                      valueFrom:
+                        secretKeyRef:
+                          name: openai_api_key
+                          key: latest
+                    - name: LANGCHAIN_API_KEY
+                      valueFrom:
+                        secretKeyRef:
+                          name: langchain_api_key
+                          key: latest
+                    - name: LANGCHAIN_PROJECT
+                      valueFrom:
+                        secretKeyRef:
+                          name: langchain_project
+                          key: latest
+                    - name: LANGCHAIN_TRACING_V2
+                      value: "true"
+                    - name: LANGCHAIN_ENDPOINT
+                      value: "https://api.smith.langchain.com"
+                  livenessProbe:
+                    httpGet:
+                      path: /api/health
+                      port: 8081
+        EOF
 
-  # Cloud Run URL を取得
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    id: 'get-url'
-    entrypoint: 'bash'
-    args:
-    - '-c'
-    - |
-      SERVICE_URL=$(gcloud run services describe docubot-service --region us-central1 --format='value(status.url)')
-      echo "Service URL: $$SERVICE_URL"
-      echo "$$SERVICE_URL" > /workspace/service_url.txt
-
-  # Cloud Runへのデプロイ
+  # Deploy backend service
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: 'gcloud'
     args:
       - 'run'
       - 'services'
       - 'replace'
-      - 'service.yaml'
+      - 'backend-service.yaml'
+      - '--region'
+      - 'us-central1'
+
+  # Get backend URL and create frontend service YAML
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        BACKEND_URL=$(gcloud run services describe backend-service --region us-central1 --format='value(status.url)')
+        cat > frontend-service.yaml <<EOF
+        apiVersion: serving.knative.dev/v1
+        kind: Service
+        metadata:
+          name: frontend-service
+        spec:
+          template:
+            metadata:
+              annotations:
+                run.googleapis.com/vpc-access-connector: vpc-direct-egress
+                run.googleapis.com/vpc-access-egress: all-traffic
+            spec:
+              serviceAccountName: frontend-sa
+              containers:
+                - name: frontend
+                  image: us-central1-docker.pkg.dev/$PROJECT_ID/frontend-repo/frontend:latest
+                  ports:
+                    - containerPort: 3000
+                  env:
+                    - name: NEXT_PUBLIC_API_URL
+                      value: "/api"
+                    - name: BACKEND_URL
+                      value: "$BACKEND_URL"
+        EOF
+
+  # IAM設定：フロントエンドにバックエンドへのアクセス権限を付与
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        gcloud run services add-iam-policy-binding backend-service \
+          --member="serviceAccount:frontend-sa@$PROJECT_ID.iam.gserviceaccount.com" \
+          --role="roles/run.invoker" \
+          --region=us-central1
+
+  # Deploy frontend service
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'gcloud'
+    args:
+      - 'run'
+      - 'services'
+      - 'replace'
+      - 'frontend-service.yaml'
       - '--region'
       - 'us-central1'
 
 images:
- - 'us-central1-docker.pkg.dev/$PROJECT_ID/docubot-repo/backend'
- - 'us-central1-docker.pkg.dev/$PROJECT_ID/docubot-repo/frontend'
+  - 'us-central1-docker.pkg.dev/$PROJECT_ID/backend-repo/backend:latest'
+  - 'us-central1-docker.pkg.dev/$PROJECT_ID/frontend-repo/frontend:latest'
