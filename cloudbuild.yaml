@@ -117,7 +117,10 @@ steps:
     args:
       - '-c'
       - |
+        # バックエンドURLを取得
         BACKEND_URL=$(gcloud run services describe backend-service --region us-central1 --format='value(status.url)')
+        
+        # フロントエンドサービスのYAMLを生成
         cat > frontend-service.yaml <<'EOF'
         apiVersion: serving.knative.dev/v1
         kind: Service
@@ -139,36 +142,11 @@ steps:
                   env:
                     - name: NEXT_PUBLIC_API_URL
                       value: "/api"
-                    - name: BACKEND_URL
-                      valueFrom:
-                        configMapKeyRef:
-                          name: backend-config
-                          key: url
         EOF
-
-        # Create ConfigMap for backend URL
-        cat > backend-config.yaml <<EOF
-        apiVersion: v1
-        kind: ConfigMap
-        metadata:
-          name: backend-config
-        data:
-          url: "$BACKEND_URL"
-        EOF
-
-        # Apply ConfigMap
-        kubectl apply -f backend-config.yaml
-
-  # IAM設定：フロントエンドにバックエンドへのアクセス権限を付与
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    entrypoint: 'bash'
-    args:
-      - '-c'
-      - |
-        gcloud run services add-iam-policy-binding backend-service \
-          --member="serviceAccount:frontend-sa@$PROJECT_ID.iam.gserviceaccount.com" \
-          --role="roles/run.invoker" \
-          --region=us-central1
+        
+        # バックエンドURLを含むYAMLの残りの部分を追加
+        echo "                    - name: BACKEND_URL" >> frontend-service.yaml
+        echo "                      value: \"$BACKEND_URL\"" >> frontend-service.yaml
 
   # Deploy frontend service
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
