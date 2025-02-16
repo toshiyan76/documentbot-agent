@@ -1,0 +1,35 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: frontend-service
+  annotations:
+    run.googleapis.com/ingress: all
+spec:
+  template:
+    metadata:
+      annotations:
+        run.googleapis.com/vpc-access-egress: all-traffic
+        run.googleapis.com/network-interfaces: '[{"network":"projects/docubot-agent/global/networks/docubot-network","subnetwork":"projects/docubot-agent/regions/us-central1/subnetworks/docubot-subnet"}]'
+    spec:
+      serviceAccountName: docubot-run-sa
+      containers:
+        - name: frontend
+          image: us-central1-docker.pkg.dev/docubot-agent/frontend-repo/frontend:latest
+          ports:
+            - containerPort: 3000
+          env:
+            - name: NEXT_PUBLIC_API_URL
+              value: "/api"
+            - name: BACKEND_URL
+              value: "https://backend-service-273148242685.us-central1.run.app"
+            - name: NODE_ENV
+              value: "production"
+            - name: HOSTNAME
+              value: "0.0.0.0"
+          resources:
+            limits:
+              cpu: "1"
+              memory: "512Mi"
+            requests:
+              cpu: "500m"
+              memory: "256Mi" 

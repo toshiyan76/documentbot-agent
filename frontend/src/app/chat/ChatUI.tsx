@@ -1,6 +1,16 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 
+// APIのベースURLを環境に応じて切り替え
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 
+  (process.env.NODE_ENV === 'development' ? 'http://localhost:8080' : 'https://backend-service-273148242685.us-central1.run.app')
+
+console.log('Environment variables:', {
+  NODE_ENV: process.env.NODE_ENV,
+  NEXT_PUBLIC_API_BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL,
+  API_BASE_URL: API_BASE_URL
+})
+
 export default function ChatUI() {
   const [input, setInput] = useState('')
   const [messages, setMessages] = useState<Array<{role: string, content: string}>>([])
@@ -69,14 +79,17 @@ export default function ChatUI() {
       const userMessage = { role: 'user', content: input }
       setMessages(prev => [...prev, userMessage])
       
-      console.log('Sending request to:', '/api/chat')
-      const response = await fetchWithTimeout('/api/chat', {
+      const backendUrl = `${API_BASE_URL}/api/chat`
+      console.log('Sending request to:', backendUrl)
+      const response = await fetchWithTimeout(backendUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
         },
         body: JSON.stringify({ message: input }),
         timeoutMs: 600000, // 10分
+        credentials: 'omit', // CORSリクエストで認証情報を送信しない
       })
 
       console.log('Response status:', response.status)

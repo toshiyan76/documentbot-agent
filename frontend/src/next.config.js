@@ -2,16 +2,11 @@
 const nextConfig = {
   output: "standalone",
   experimental: {
-    serverMinification: true,
-    serverTimeout: 600000, // 10分
+    serverMinification: true
   },
-  httpAgentOptions: {
-    keepAlive: true,
-    timeout: 600000, // 10分
-    scheduling: 'fifo',
-    maxSockets: 100,
-    maxFreeSockets: 10,
-    socketTimeout: 610000, // timeout + 10秒
+  env: {
+    NEXT_PUBLIC_API_BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL || 
+      (process.env.NODE_ENV === 'development' ? 'http://localhost:8080' : 'https://backend-service-273148242685.us-central1.run.app')
   },
   async headers() {
     return [
@@ -35,18 +30,13 @@ const nextConfig = {
     ];
   },
   async rewrites() {
+    const backendUrl = process.env.BACKEND_URL || 'http://localhost:8080';
     return [
       {
         source: '/api/:path*',
-        destination: `${process.env.BACKEND_URL}/api/:path*`,
+        destination: `${backendUrl}/api/:path*`,
       },
     ];
-  },
-  serverOptions: {
-    maxHeaderSize: 65536, // 64KB
-    keepAliveTimeout: 600000, // 10分
-    headersTimeout: 610000, // keepAliveTimeout + 10秒
-    maxRequestsPerSocket: 0, // 無制限
   },
   webpack: (config, { isServer }) => {
     if (!isServer) {
@@ -61,6 +51,11 @@ const nextConfig = {
     }
     return config;
   },
+  // Cloud Run用の設定
+  distDir: '.next',
+  generateBuildId: async () => {
+    return 'build'
+  }
 };
 
 module.exports = nextConfig;

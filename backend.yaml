@@ -1,0 +1,43 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: backend-service
+spec:
+  template:
+    metadata:
+      annotations:
+        run.googleapis.com/ingress: internal
+        autoscaling.knative.dev/maxScale: "10"
+        run.googleapis.com/startup-cpu-boost: "true"
+    spec:
+      serviceAccountName: docubot-run-sa
+      containers:
+        - name: backend
+          image: us-central1-docker.pkg.dev/docubot-agent/backend-repo/backend:latest
+          env:
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: openai_api_key
+                  key: latest
+            - name: LANGCHAIN_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: langchain_api_key
+                  key: latest
+            - name: LANGCHAIN_PROJECT
+              valueFrom:
+                secretKeyRef:
+                  name: langchain_project
+                  key: latest
+            - name: LANGCHAIN_TRACING_V2
+              value: "true"
+            - name: LANGCHAIN_ENDPOINT
+              value: "https://api.smith.langchain.com"
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5

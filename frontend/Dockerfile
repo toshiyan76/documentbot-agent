@@ -1,60 +1,55 @@
-ARG IMG_VER="20.11.0"
+# syntax=docker.io/docker/dockerfile:1
+FROM node:20.11.0-slim AS base
+WORKDIR /app
 
-### base ####
-FROM node:${IMG_VER} AS base
-RUN apt-get update -qq && \
-    apt-get install -y --no-install-recommends \
-    libvips42 \
-    && rm -rf /var/lib/apt/lists/*
+# デフォルトではproductionですが、build引数で上書き可能にする
+ARG BUILD_ENV=production
+ENV NODE_ENV=${BUILD_ENV}
 
-# npmは20.11.0に付属のものを使用するため、追加インストール不要
-RUN corepack disable
+# Next.jsのテレメトリを無効化（プライバシーとセキュリティのため）
+ENV NEXT_TELEMETRY_DISABLED 1
 
-FROM base AS init
-WORKDIR /app/src
-
+## 開発用ステージ
 FROM base AS dev
-WORKDIR /app/src
+WORKDIR /app
+# 依存関係のインストール
+COPY src/package.json src/package-lock.json* ./
+RUN npm install
+# ソースコードをコピー（volumeマウントがある場合は上書きされるので、最低限のファイルだけでもOK）
+COPY src/ ./
+EXPOSE 3000
+CMD ["npm", "run", "dev"]
 
+## 以下はプロダクション用のステージ（既存の内容）
+FROM base AS deps
+WORKDIR /app
+COPY src/package.json src/package-lock.json* ./
+RUN npm ci
+
+# Rebuild the source code only when needed
 FROM base AS builder
 WORKDIR /app
-ARG NEXT_PUBLIC_API_URL
-ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
-COPY src/package*.json ./
-RUN npm install --production
-ENV NODE_ENV=production
-COPY src/ ./
+COPY --from=deps /app/node_modules ./node_modules
+COPY src/ .
 RUN npm run build
 
-FROM node:${IMG_VER} AS runner
+# Production image, copy all the files and run next
+FROM base AS runner
 WORKDIR /app
 
-# 環境変数の設定
-ENV NODE_ENV=production
-ENV PORT=3000
-ENV HOSTNAME="0.0.0.0"
-ENV NODE_OPTIONS="--max-old-space-size=512 --max-http-header-size=16384"
+RUN groupadd -r nodejs && useradd -r -g nodejs nextjs
 
-# タイムアウト設定
-ENV SERVER_TIMEOUT=60000
-ENV KEEP_ALIVE_TIMEOUT=65000
-
-# Next.js固有の設定
-ENV NEXT_TELEMETRY_DISABLED=1
-
-# デバッグ用の環境変数
-ENV DEBUG="*"
-
-# Next.js固有の設定
-ENV NEXT_TELEMETRY_DISABLED=1
-ENV NEXT_SHARP_PATH=/usr/local/lib/node_modules/sharp
-
-# スタンドアロンビルドの結果をコピー
+# Automatically leverage output traces to reduce image size
+# https://nextjs.org/docs/advanced-features/output-file-tracing
 COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/static ./.next/static
+COPY --from=builder /app/public ./public
+
+USER nextjs
 
 EXPOSE 3000
 
+ENV PORT 3000
+ENV HOSTNAME "0.0.0.0"
 
 CMD ["node", "server.js"]

@@ -51,55 +51,6 @@ steps:
   - name: 'gcr.io/cloud-builders/docker'
     args: ['push', 'us-central1-docker.pkg.dev/$PROJECT_ID/frontend-repo/frontend:latest']
 
-  # バックエンドサービスのデプロイ用YAMLを生成
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    entrypoint: bash
-    args:
-      - -c
-      - |
-        cat > backend-service.yaml <<'EOF'
-        apiVersion: serving.knative.dev/v1
-        kind: Service
-        metadata:
-          name: backend-service
-        spec:
-          template:
-            metadata:
-              annotations:
-                run.googleapis.com/ingress: internal
-            spec:
-              serviceAccountName: backend-sa
-              containers:
-                - name: backend
-                  image: us-central1-docker.pkg.dev/$PROJECT_ID/backend-repo/backend:latest
-                  env:
-                    - name: PORT
-                      value: "8081"
-                    - name: OPENAI_API_KEY
-                      valueFrom:
-                        secretKeyRef:
-                          name: openai_api_key
-                          key: latest
-                    - name: LANGCHAIN_API_KEY
-                      valueFrom:
-                        secretKeyRef:
-                          name: langchain_api_key
-                          key: latest
-                    - name: LANGCHAIN_PROJECT
-                      valueFrom:
-                        secretKeyRef:
-                          name: langchain_project
-                          key: latest
-                    - name: LANGCHAIN_TRACING_V2
-                      value: "true"
-                    - name: LANGCHAIN_ENDPOINT
-                      value: "https://api.smith.langchain.com"
-                  livenessProbe:
-                    httpGet:
-                      path: /api/health
-                      port: 8081
-        EOF
-
   # Deploy backend service
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: 'gcloud'
@@ -107,46 +58,29 @@ steps:
       - 'run'
       - 'services'
       - 'replace'
-      - 'backend-service.yaml'
+      - 'backend.yaml'
       - '--region'
       - 'us-central1'
 
-  # Get backend URL and create frontend service YAML
+  # Get backend URL and update frontend.yaml
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     entrypoint: 'bash'
     args:
       - '-c'
       - |
-        # バックエンドURLを取得
         BACKEND_URL=$(gcloud run services describe backend-service --region us-central1 --format='value(status.url)')
-        
-        # フロントエンドサービスのYAMLを生成
-        cat > frontend-service.yaml <<'EOF'
-        apiVersion: serving.knative.dev/v1
-        kind: Service
-        metadata:
-          name: frontend-service
-        spec:
-          template:
-            metadata:
-              annotations:
-                run.googleapis.com/vpc-access-connector: vpc-direct-egress
-                run.googleapis.com/vpc-access-egress: all-traffic
-            spec:
-              serviceAccountName: frontend-sa
-              containers:
-                - name: frontend
-                  image: us-central1-docker.pkg.dev/$PROJECT_ID/frontend-repo/frontend:latest
-                  ports:
-                    - containerPort: 3000
-                  env:
-                    - name: NEXT_PUBLIC_API_URL
-                      value: "/api"
-        EOF
-        
-        # バックエンドURLを含むYAMLの残りの部分を追加
-        echo "                    - name: BACKEND_URL" >> frontend-service.yaml
-        echo "                      value: \"$BACKEND_URL\"" >> frontend-service.yaml
+        sed -i "s|BACKEND_URL_PLACEHOLDER|$BACKEND_URL|g" frontend.yaml
+
+  # IAM設定：フロントエンドにバックエンドへのアクセス権限を付与
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        gcloud run services add-iam-policy-binding backend-service \
+          --member="serviceAccount:frontend-sa@$PROJECT_ID.iam.gserviceaccount.com" \
+          --role="roles/run.invoker" \
+          --region=us-central1
 
   # Deploy frontend service
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
@@ -155,7 +89,7 @@ steps:
       - 'run'
       - 'services'
       - 'replace'
-      - 'frontend-service.yaml'
+      - 'frontend.yaml'
       - '--region'
       - 'us-central1'
 

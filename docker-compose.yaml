@@ -3,13 +3,14 @@ services:
     build:
       context: frontend
       dockerfile: Dockerfile
+      target: dev
       args:
-        NEXT_PUBLIC_API_URL: http://backend:8081
+        - BUILD_ENV=development
     ports:
       - "3000:3000"
     environment:
-      - NODE_ENV=development
-      - NEXT_PUBLIC_API_URL=http://backend:8081
+      - PORT=3000
+      - HOSTNAME=0.0.0.0
     depends_on:
       - backend
     networks:
@@ -20,7 +21,7 @@ services:
       context: backend
       dockerfile: Dockerfile
     ports:
-      - "8081:8081"
+      - "8080:8080"
     env_file:
       - .env
     networks:

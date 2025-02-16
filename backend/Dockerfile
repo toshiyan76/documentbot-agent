@@ -1,42 +1,26 @@
-ARG PYTHON_VERSION=3.10
-FROM python:${PYTHON_VERSION}-slim AS base
+FROM python:3.10-slim
+
+WORKDIR /app
+
+# Install system dependencies
 RUN apt-get update && \
     apt-get install -y \
-    git gcc musl-dev && \
+    git gcc && \
     rm -rf /var/lib/apt/lists/*
 
-FROM base AS init
-WORKDIR /app
+# Set environment variables
+ENV PORT=8080
+ENV PYTHONPATH=/app
+ENV UVICORN_LOG_LEVEL=debug
+ENV PYTHONUNBUFFERED=1
+ENV FASTAPI_ENV=development
 
-FROM base AS dev
-WORKDIR /app
-COPY src/requirements.txt requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt
-COPY . /app
-ENV PYTHONPATH=/app/src
-ENV FASTAPI_ENV="development"
-
-FROM base AS builder
-ARG API_PORT
-WORKDIR /app
-
-COPY src/requirements.txt requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt
-COPY src/ ./src/
-ENV FASTAPI_ENV="production"
-
-FROM python:${PYTHON_VERSION}-slim AS runner
-WORKDIR /app
-ENV PYTHONPATH=/app/src
-ENV FASTAPI_ENV="production"
-
-COPY src/requirements.txt requirements.txt
+# Install Python dependencies
+COPY src/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY --from=builder /app/src .
-COPY --from=builder /usr/local/lib/python3.10/site-packages/ /usr/local/lib/python3.10/site-packages/
+# Copy application code
+COPY src/ .
 
-EXPOSE 8081
-ENV PORT 8081
-
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8081"]
+# Start the application
+CMD ["python", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080", "--workers", "1", "--log-level", "debug"]
